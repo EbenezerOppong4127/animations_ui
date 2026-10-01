@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Transition</title>
+<style>
+  :root {
+    --ink: #111827;
+    --paper: #f5f3ee;
+    --accent: #ff5a36;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Navigation ---------- */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px clamp(16px, 5vw, 48px);
+    background: var(--paper);
+  }
+  .logo { font-weight: 900; font-size: 20px; letter-spacing: -.02em; }
+  .logo span { color: var(--accent); }
+
+  .links { position: relative; display: flex; gap: 4px; list-style: none; }
+  .links button {
+    position: relative;
+    z-index: 1;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  /* Pastille qui glisse sous le lien actif */
+  .pill {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--ink);
+    transition: left .45s cubic-bezier(.7, 0, .2, 1), width .45s cubic-bezier(.7, 0, .2, 1);
+  }
+  .links button[aria-current="page"] { color: var(--paper); transition: color .3s .15s; }
+
+  /* ---------- Rideau de transition ---------- */
+  .curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .curtain i {
+    background: var(--ink);
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+  .curtain i:nth-child(even) { background: var(--accent); }
+  .curtain.in i {
+    transform: scaleY(1);
+    transition: transform .45s cubic-bezier(.7, 0, .3, 1);
+    transition-delay: calc(var(--n) * 60ms);
+  }
+  .curtain.out i {
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform .45s cubic-bezier(.7, 0, .3, 1);
+    transition-delay: calc(var(--n) * 60ms);
+  }
+  .curtain .label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--paper);
+    font-size: clamp(32px, 8vw, 80px);
+    font-weight: 900;
+    letter-spacing: -.03em;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .curtain.in .label { opacity: 1; transition-delay: .4s; }
+
+  /* ---------- Pages ---------- */
+  main { padding: 6vh clamp(16px, 5vw, 48px) 60px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Les éléments [data-stagger] entrent en cascade à chaque affichage */
+  .page.active [data-stagger] {
+    animation: enter .8s cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(.1s + var(--s) * .08s);
+  }
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(30px); }
+  }
+
+  h1 {
+    font-size: clamp(40px, 9vw, 104px);
+    line-height: .95;
+    letter-spacing: -.04em;
+    font-weight: 900;
+    max-width: 11ch;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .intro { margin-top: 22px; max-width: 480px; font-size: 17px; line-height: 1.6; color: #4b5563; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+    margin-top: 34px;
+  }
+  .tile {
+    aspect-ratio: 4 / 5;
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-end;
+    color: #fff;
+    font-weight: 700;
+    transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+  }
+  .tile:hover { transform: translateY(-6px) rotate(-1deg); }
+
+  .form { display: grid; gap: 12px; margin-top: 30px; max-width: 420px; }
+  .form input, .form textarea {
+    padding: 14px 16px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: transparent;
+    font: inherit;
+    resize: vertical;
+  }
+  .form button {
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  @media (max-width: 520px) {
+    .logo { font-size: 17px; }
+    .links button { padding: 8px 10px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">studio<span>.</span></div>
+  <ul class="links" id="links">
+    <span class="pill" aria-hidden="true"></span>
+    <li><button type="button" data-page="home" aria-current="page">Accueil</button></li>
+    <li><button type="button" data-page="work">Projets</button></li>
+    <li><button type="button" data-page="contact">Contact</button></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="page active" id="home" data-title="Accueil">
+    <h1 data-stagger style="--s:0">Design qui <em>raconte</em> une histoire.</h1>
+    <p class="intro" data-stagger style="--s:1">Cliquez sur les liens du menu : un rideau en bandes recouvre l'écran, le contenu change, puis la nouvelle page entre en cascade.</p>
+  </section>
+
+  <section class="page" id="work" data-title="Projets">
+    <h1 data-stagger style="--s:0">Projets <em>récents</em></h1>
+    <div class="tiles">
+      <div class="tile" data-stagger style="--s:1; background:#ff5a36">Aurora</div>
+      <div class="tile" data-stagger style="--s:2; background:#111827">Monolith</div>
+      <div class="tile" data-stagger style="--s:3; background:#2563eb">Tidal</div>
+      <div class="tile" data-stagger style="--s:4; background:#16a34a">Verdant</div>
+    </div>
+  </section>
+
+  <section class="page" id="contact" data-title="Contact">
+    <h1 data-stagger style="--s:0">Parlons <em>projet</em>.</h1>
+    <form class="form" onsubmit="event.preventDefault()">
+      <input data-stagger style="--s:1" placeholder="Votre nom" aria-label="Votre nom">
+      <input data-stagger style="--s:2" type="email" placeholder="Votre e-mail" aria-label="Votre e-mail">
+      <textarea data-stagger style="--s:3" rows="3" placeholder="Votre message" aria-label="Votre message"></textarea>
+      <button data-stagger style="--s:4" type="submit">Envoyer</button>
+    </form>
+  </section>
+</main>
+
+<div class="curtain" id="curtain" aria-hidden="true">
+  <i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i><i style="--n:4"></i>
+  <div class="label"></div>
+</div>
+
+<script>
+  const links = document.getElementById('links');
+  const pill = links.querySelector('.pill');
+  const curtain = document.getElementById('curtain');
+  const label = curtain.querySelector('.label');
+  let busy = false;
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  function movePill(btn) {
+    pill.style.left = btn.offsetLeft + 'px';
+    pill.style.width = btn.offsetWidth + 'px';
+  }
+
+  async function go(btn) {
+    if (busy || btn.getAttribute('aria-current') === 'page') return;
+    busy = true;
+    const next = document.getElementById(btn.dataset.page);
+
+    links.querySelectorAll('button').forEach(b => b.removeAttribute('aria-current'));
+    btn.setAttribute('aria-current', 'page');
+    movePill(btn);
+
+    // 1. Le rideau monte et couvre l'écran
+    label.textContent = next.dataset.title;
+    curtain.className = 'curtain in';
+    await wait(450 + 4 * 60 + 350);
+
+    // 2. Changement de page pendant que tout est caché
+    document.querySelector('.page.active').classList.remove('active');
+    next.classList.add('active');
+    window.scrollTo(0, 0);
+
+    // 3. Le rideau se retire vers le haut
+    curtain.className = 'curtain out';
+    await wait(450 + 4 * 60);
+    curtain.className = 'curtain';
+    busy = false;
+  }
+
+  links.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (btn) go(btn);
+  });
+
+  movePill(links.querySelector('[aria-current="page"]'));
+  addEventListener('resize', () => movePill(links.querySelector('[aria-current="page"]')));
+</script>
+</body>
+</html>

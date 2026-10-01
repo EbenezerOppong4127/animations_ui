@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landing Hero</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    overflow: hidden;
+    background: #07070f;
+    color: #f4f4f8;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* ---------- Fond : blobs colorés qui flottent ---------- */
+  .bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    filter: blur(70px);
+    opacity: .75;
+  }
+  .blob {
+    position: absolute;
+    width: 46vmax;
+    height: 46vmax;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+  }
+  .blob.b1 { background: #7c3aed; top: -18vmax; left: -12vmax; animation: float1 16s ease-in-out infinite alternate; }
+  .blob.b2 { background: #db2777; bottom: -20vmax; right: -14vmax; animation: float2 19s ease-in-out infinite alternate; }
+  .blob.b3 { background: #0ea5e9; top: 30%; left: 40%; width: 30vmax; height: 30vmax; animation: float3 13s ease-in-out infinite alternate; }
+
+  @keyframes float1 { to { transform: translate(18vmax, 12vmax) scale(1.15); } }
+  @keyframes float2 { to { transform: translate(-16vmax, -10vmax) scale(.9); } }
+  @keyframes float3 { to { transform: translate(-22vmax, 8vmax) scale(1.25); } }
+
+  /* Grain + grille légère par-dessus */
+  .grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+
+  /* Halo qui suit la souris */
+  .glow {
+    position: fixed;
+    width: 420px;
+    height: 420px;
+    left: 0;
+    top: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.12), transparent 65%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity .3s ease;
+  }
+
+  /* ---------- Navigation ---------- */
+  nav {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px clamp(16px, 5vw, 56px);
+    animation: drop .8s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .3px; }
+  .logo i {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: conic-gradient(from 0deg, #7c3aed, #db2777, #0ea5e9, #7c3aed);
+    animation: spin 6s linear infinite;
+  }
+  nav ul { display: flex; gap: 26px; list-style: none; font-size: 14px; color: #c4c4d4; }
+  nav a { color: inherit; text-decoration: none; }
+  nav a:hover { color: #fff; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 16px 60px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    color: #d8d8e8;
+    animation: rise .8s .3s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .badge b {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34,197,94,.6);
+    animation: ping 1.8s ease-out infinite;
+  }
+
+  h1 {
+    margin: 22px 0 18px;
+    font-size: clamp(36px, 7.5vw, 84px);
+    line-height: 1.02;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    max-width: 14ch;
+  }
+  /* Chaque mot est enveloppé en JS dans <span class="word"><span>…</span></span> */
+  h1 .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .08em; }
+  h1 .word > span {
+    display: inline-block;
+    transform: translateY(110%);
+    animation: word-up .9s cubic-bezier(.2, .8, .2, 1) forwards;
+    animation-delay: calc(.5s + var(--i) * .09s);
+  }
+  h1 .gradient {
+    background: linear-gradient(90deg, #a78bfa, #f472b6, #38bdf8, #a78bfa);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: word-up .9s cubic-bezier(.2, .8, .2, 1) forwards, shine 6s linear infinite;
+    animation-delay: calc(.5s + var(--i) * .09s), 0s;
+  }
+
+  .lead {
+    max-width: 560px;
+    font-size: clamp(15px, 2vw, 18px);
+    line-height: 1.6;
+    color: #b6b6c8;
+    animation: rise .9s 1.2s cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
+    animation: rise .9s 1.4s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .btn {
+    position: relative;
+    padding: 14px 26px;
+    border-radius: 12px;
+    border: none;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .btn.primary {
+    background: #fff;
+    color: #0b0b14;
+    box-shadow: 0 10px 30px rgba(167, 139, 250, .35);
+  }
+  .btn.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(167, 139, 250, .5); }
+  .btn.primary span { display: inline-block; transition: transform .2s ease; }
+  .btn.primary:hover span { transform: translateX(4px); }
+  .btn.ghost {
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+  }
+  .btn.ghost:hover { background: rgba(255,255,255,.12); }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(20px, 6vw, 64px);
+    margin-top: 56px;
+    animation: rise .9s 1.6s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .stat strong { display: block; font-size: 28px; font-variant-numeric: tabular-nums; }
+  .stat small { color: #8f8fa6; font-size: 13px; }
+
+  .replay {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 3;
+    padding: 8px 14px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 999px;
+    background: rgba(0,0,0,.35);
+    color: #ddd;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+
+  @keyframes drop    { from { opacity: 0; transform: translateY(-24px); } }
+  @keyframes rise    { from { opacity: 0; transform: translateY(24px); } }
+  @keyframes word-up { to { transform: translateY(0); } }
+  @keyframes shine   { to { background-position: 300% 0; } }
+  @keyframes spin    { to { transform: rotate(360deg); } }
+  @keyframes ping    { 70% { box-shadow: 0 0 0 10px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+
+  @media (max-width: 640px) { nav ul { display: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="grid" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true"></div>
+
+<div id="page">
+  <nav>
+    <div class="logo"><i></i>Nebula</div>
+    <ul>
+      <li><a href="#">Produit</a></li>
+      <li><a href="#">Tarifs</a></li>
+      <li><a href="#">Docs</a></li>
+      <li><a href="#">Connexion</a></li>
+    </ul>
+  </nav>
+
+  <section class="hero">
+    <span class="badge"><b></b>Nouveau · Version 2.0 disponible</span>
+    <h1 id="title">Créez des interfaces qui <em class="gradient">bougent</em> avec style</h1>
+    <p class="lead">Des animations fluides, accessibles et légères pour donner vie à vos produits — sans sacrifier les performances.</p>
+    <div class="cta">
+      <button class="btn primary" type="button">Commencer gratuitement <span>→</span></button>
+      <button class="btn ghost" type="button">Voir la démo</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong data-count="12000" data-suffix="+">0</strong><small>équipes</small></div>
+      <div class="stat"><strong data-count="99.9" data-suffix="%" data-decimals="1">0</strong><small>disponibilité</small></div>
+      <div class="stat"><strong data-count="60" data-suffix=" fps">0</strong><small>en continu</small></div>
+    </div>
+  </section>
+</div>
+
+<button class="replay" type="button">↻ Rejouer</button>
+
+<script>
+  // 1. Découpe le titre en mots pour l'apparition mot par mot
+  const title = document.getElementById('title');
+  let i = 0;
+  [...title.childNodes].forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const frag = document.createDocumentFragment();
+      node.textContent.split(/(\s+)/).forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+        const outer = document.createElement('span');
+        outer.className = 'word';
+        const inner = document.createElement('span');
+        inner.textContent = part;
+        inner.style.setProperty('--i', i++);
+        outer.appendChild(inner);
+        frag.appendChild(outer);
+      });
+      node.replaceWith(frag);
+    } else {
+      // Mot en dégradé : on l'enveloppe aussi
+      const outer = document.createElement('span');
+      outer.className = 'word';
+      node.style.setProperty('--i', i++);
+      node.style.display = 'inline-block';
+      node.style.transform = 'translateY(110%)';
+      node.replaceWith(outer);
+      outer.appendChild(node);
+    }
+  });
+
+  // 2. Compteurs qui défilent jusqu'à leur valeur
+  function countUp() {
+    document.querySelectorAll('[data-count]').forEach(el => {
+      const target = parseFloat(el.dataset.count);
+      const decimals = Number(el.dataset.decimals || 0);
+      const suffix = el.dataset.suffix || '';
+      const start = performance.now() + 1600;
+      const duration = 1600;
+      function frame(now) {
+        const t = Math.min(1, Math.max(0, (now - start) / duration));
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = (target * eased).toLocaleString('fr-FR', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        }) + suffix;
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  countUp();
+
+  // 3. Halo qui suit la souris
+  const glow = document.querySelector('.glow');
+  glow.style.opacity = 0;
+  window.addEventListener('pointermove', e => {
+    glow.style.opacity = 1;
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+  document.addEventListener('pointerleave', () => { glow.style.opacity = 0; });
+
+  // 4. Rejouer : on clone la page pour relancer toutes les animations CSS
+  document.querySelector('.replay').addEventListener('click', () => {
+    const page = document.getElementById('page');
+    const clone = page.cloneNode(true);
+    page.replaceWith(clone);
+    countUp();
+  });
+</script>
+</body>
+</html>

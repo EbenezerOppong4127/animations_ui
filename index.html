@@ -98,6 +98,43 @@
   .search input:focus ~ kbd,
   .search input:not(:placeholder-shown) ~ kbd { display: none; }
 
+  /* Filtres par catégorie */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 10px 10px;
+  }
+  .chips button {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chips button:hover { color: var(--text); border-color: var(--muted); }
+  .chips button[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0e1015;
+    font-weight: 600;
+  }
+  .chips span { opacity: .7; margin-left: 3px; }
+
+  .list .group {
+    padding: 12px 12px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .list .group:first-child { padding-top: 4px; }
+
   .count {
     padding: 0 22px 6px;
     font-size: 12px;
@@ -261,7 +298,10 @@
   @media (max-width: 900px) {
     body { flex-direction: column; height: auto; }
     .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-    .list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+    .list { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+    .list .group { padding: 0 4px 0 8px; white-space: nowrap; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; }
+    .chips button { white-space: nowrap; }
     .list button { white-space: nowrap; }
     .main { padding: 16px; }
     .columns { grid-template-columns: 1fr; }
@@ -282,6 +322,7 @@
     <input id="search" type="search" placeholder="Rechercher…" autocomplete="off" aria-label="Rechercher une animation">
     <kbd>/</kbd>
   </label>
+  <div class="chips" id="chips" role="group" aria-label="Filtrer par catégorie"></div>
   <p class="count" id="count" aria-live="polite"></p>
   <ul class="list" id="list"></ul>
   <nav class="pager" id="pager" aria-label="Pagination"></nav>
@@ -305,26 +346,42 @@
 </main>
 
 <script>
-  // Liste des animations : ajoutez une entrée ici pour chaque nouveau fichier.
-  // `tags` (facultatif) : mots-clés supplémentaires pris en compte par la recherche.
-  const animations = [
-    { name: 'Order Confirm',      file: 'order-confirm.html',      tags: 'commande camion livraison colis bouton coche' },
-    { name: 'Like Button',        file: 'like-button.html',        tags: 'coeur cœur j\'aime favori particules' },
-    { name: 'Toggle Switch',      file: 'toggle-switch.html',      tags: 'interrupteur on off checkbox formulaire' },
-    { name: 'Loading Spinner',    file: 'loading-spinner.html',    tags: 'chargement attente rotation loader' },
-    { name: 'Toast Notification', file: 'toast-notification.html', tags: 'notification alerte message snackbar' },
-    { name: 'Skeleton Loader',    file: 'skeleton-loader.html',    tags: 'squelette chargement shimmer carte placeholder' },
-    { name: 'Flip Card',          file: 'flip-card.html',          tags: 'carte retourner 3d survol hover' },
-    { name: 'Ripple Button',      file: 'ripple-button.html',      tags: 'onde bouton material clic' },
-    { name: 'Progress Bar',       file: 'progress-bar.html',       tags: 'progression barre envoi upload pourcentage' },
-    { name: 'Hamburger Menu',     file: 'hamburger-menu.html',     tags: 'menu navigation croix burger mobile' },
+  // Catégories, dans l'ordre d'affichage
+  const categories = [
+    'Boutons & contrôles',
+    'Chargement & feedback',
+    'Navigation & cartes',
+    'Pages complètes',
   ];
 
-  const PAGE_SIZE = 6; // nombre d'animations par page dans la barre latérale
+  // Liste des animations : ajoutez une entrée ici pour chaque nouveau fichier.
+  // `category` : l'une des catégories ci-dessus.
+  // `tags` (facultatif) : mots-clés supplémentaires pris en compte par la recherche.
+  const animations = [
+    { name: 'Order Confirm',      file: 'order-confirm.html',      category: 'Boutons & contrôles',   tags: 'commande camion livraison colis bouton coche' },
+    { name: 'Like Button',        file: 'like-button.html',        category: 'Boutons & contrôles',   tags: 'coeur cœur j\'aime favori particules' },
+    { name: 'Ripple Button',      file: 'ripple-button.html',      category: 'Boutons & contrôles',   tags: 'onde bouton material clic' },
+    { name: 'Toggle Switch',      file: 'toggle-switch.html',      category: 'Boutons & contrôles',   tags: 'interrupteur on off checkbox formulaire' },
+    { name: 'Loading Spinner',    file: 'loading-spinner.html',    category: 'Chargement & feedback', tags: 'chargement attente rotation loader' },
+    { name: 'Skeleton Loader',    file: 'skeleton-loader.html',    category: 'Chargement & feedback', tags: 'squelette chargement shimmer carte placeholder' },
+    { name: 'Progress Bar',       file: 'progress-bar.html',       category: 'Chargement & feedback', tags: 'progression barre envoi upload pourcentage' },
+    { name: 'Toast Notification', file: 'toast-notification.html', category: 'Chargement & feedback', tags: 'notification alerte message snackbar' },
+    { name: 'Hamburger Menu',     file: 'hamburger-menu.html',     category: 'Navigation & cartes',   tags: 'menu navigation croix burger mobile' },
+    { name: 'Flip Card',          file: 'flip-card.html',          category: 'Navigation & cartes',   tags: 'carte retourner 3d survol hover' },
+    { name: 'Landing Hero',       file: 'landing-hero.html',       category: 'Pages complètes',       tags: 'accueil landing hero titre dégradé blobs compteur' },
+    { name: 'Scroll Reveal',      file: 'scroll-reveal.html',      category: 'Pages complètes',       tags: 'défilement scroll apparition article blog progression lecture' },
+    { name: 'Page Transition',    file: 'page-transition.html',    category: 'Pages complètes',       tags: 'transition rideau navigation site multipage' },
+    { name: 'Parallax Scene',     file: 'parallax-scene.html',     category: 'Pages complètes',       tags: 'parallaxe montagnes paysage souris profondeur' },
+    { name: 'Pricing Page',       file: 'pricing-page.html',       category: 'Pages complètes',       tags: 'tarifs prix abonnement mensuel annuel cartes' },
+    { name: 'Login Page',         file: 'login-page.html',         category: 'Pages complètes',       tags: 'connexion formulaire mot de passe erreur vagues' },
+  ];
+
+  const PAGE_SIZE = 8; // nombre d'animations par page dans la barre latérale
 
   const list = document.getElementById('list');
   const searchInput = document.getElementById('search');
   const countEl = document.getElementById('count');
+  const chips = document.getElementById('chips');
   const pager = document.getElementById('pager');
   const title = document.getElementById('title');
   const openLink = document.getElementById('open');
@@ -337,6 +394,31 @@
   let currentFile = '';
   let filtered = animations;
   let page = 1;
+  let activeCategory = ''; // '' = toutes
+
+  // Tri par catégorie pour que chaque groupe soit contigu dans la liste
+  animations.sort((a, b) => categories.indexOf(a.category) - categories.indexOf(b.category));
+
+  // ---------- Filtres par catégorie ----------
+
+  function renderChips() {
+    chips.replaceChildren();
+    ['', ...categories].forEach(cat => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = cat || 'Toutes';
+      const n = document.createElement('span');
+      n.textContent = cat ? animations.filter(a => a.category === cat).length : animations.length;
+      b.appendChild(n);
+      b.setAttribute('aria-pressed', cat === activeCategory);
+      b.addEventListener('click', () => {
+        activeCategory = cat;
+        renderChips();
+        applySearch();
+      });
+      chips.appendChild(b);
+    });
+  }
 
   // ---------- Recherche ----------
 
@@ -346,7 +428,8 @@
   function applySearch() {
     const terms = normalize(searchInput.value.trim()).split(/\s+/).filter(Boolean);
     filtered = animations.filter(anim => {
-      const haystack = normalize([anim.name, anim.file, anim.tags || ''].join(' '));
+      if (activeCategory && anim.category !== activeCategory) return false;
+      const haystack = normalize([anim.name, anim.file, anim.category, anim.tags || ''].join(' '));
       return terms.every(t => haystack.includes(t));
     });
     // Reste sur la page de l'animation affichée si elle fait partie des résultats
@@ -401,7 +484,16 @@
       li.textContent = 'Aucune animation trouvée.';
       list.appendChild(li);
     }
+    let lastCategory = null;
     visible.forEach(anim => {
+      // Titre de groupe à chaque changement de catégorie
+      if (anim.category !== lastCategory) {
+        lastCategory = anim.category;
+        const h = document.createElement('li');
+        h.className = 'group';
+        h.textContent = anim.category;
+        list.appendChild(h);
+      }
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -413,7 +505,7 @@
       list.appendChild(li);
     });
 
-    countEl.textContent = searchInput.value.trim()
+    countEl.textContent = searchInput.value.trim() || activeCategory
       ? `${filtered.length} résultat${filtered.length > 1 ? 's' : ''} sur ${animations.length}`
       : `${animations.length} animations`;
 
@@ -443,6 +535,7 @@
     make('›', page + 1, { aria: 'Page suivante', disabled: page === pages });
   }
 
+  renderChips();
   searchInput.addEventListener('input', applySearch);
 
   searchInput.addEventListener('keydown', e => {

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll Reveal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: #fbfaf7;
+    color: #1c1917;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.7;
+  }
+
+  /* ---------- Barre de progression de lecture ---------- */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 10;
+    background: linear-gradient(90deg, #f97316, #e11d48);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  /* ---------- En-tête ---------- */
+  header {
+    min-height: 92vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 40px 16px;
+    background:
+      radial-gradient(circle at 20% 20%, #fed7aa 0, transparent 40%),
+      radial-gradient(circle at 80% 70%, #fecdd3 0, transparent 45%),
+      #fbfaf7;
+  }
+  header .kicker {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: #c2410c;
+  }
+  header h1 {
+    margin: 14px auto 18px;
+    max-width: 16ch;
+    font-size: clamp(34px, 7vw, 68px);
+    line-height: 1.05;
+  }
+  header p { max-width: 520px; margin: 0 auto; color: #57534e; }
+
+  .scroll-hint {
+    margin-top: 42px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: #78716c;
+    text-decoration: none;
+  }
+  .mouse {
+    width: 24px;
+    height: 38px;
+    border: 2px solid #a8a29e;
+    border-radius: 14px;
+    position: relative;
+  }
+  .mouse::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 7px;
+    width: 4px;
+    height: 7px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: #a8a29e;
+    animation: wheel 1.6s ease-in-out infinite;
+  }
+  @keyframes wheel {
+    0%   { opacity: 0; transform: translateY(0); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(12px); }
+  }
+
+  /* ---------- Contenu ---------- */
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px 120px; }
+  section { margin: 0 0 110px; }
+  h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.2; margin-bottom: 14px; }
+  p + p { margin-top: 14px; }
+
+  .media {
+    height: 260px;
+    margin: 28px 0;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #fb923c, #e11d48 55%, #7c3aed);
+    position: relative;
+    overflow: hidden;
+  }
+  .media::after { /* forme décorative */
+    content: "";
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    right: -40px;
+    bottom: -40px;
+    border-radius: 50%;
+    border: 30px solid rgba(255,255,255,.25);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 26px;
+    font-family: system-ui, sans-serif;
+  }
+  .stat {
+    padding: 22px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(28, 25, 23, .06);
+  }
+  .stat strong { display: block; font-size: 34px; color: #e11d48; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 14px; color: #78716c; }
+
+  blockquote {
+    margin: 30px 0;
+    padding: 6px 0 6px 22px;
+    border-left: 4px solid #f97316;
+    font-size: 22px;
+    font-style: italic;
+  }
+
+  .timeline { list-style: none; position: relative; margin-top: 24px; padding-left: 30px; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: #e7e5e4;
+  }
+  .timeline li { position: relative; margin-bottom: 26px; }
+  .timeline li::before {
+    content: "";
+    position: absolute;
+    left: -28px;
+    top: 8px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #f97316;
+  }
+  .timeline b { font-family: system-ui, sans-serif; font-size: 13px; color: #c2410c; display: block; }
+
+  footer {
+    padding: 50px 16px;
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    color: #a8a29e;
+    font-size: 13px;
+  }
+
+  /* ---------- Révélation au défilement ----------
+     L'élément part d'un état caché ; la classe .visible (ajoutée par
+     IntersectionObserver) le ramène à sa place. --d = délai en cascade. */
+  .reveal {
+    opacity: 0;
+    transition:
+      opacity .8s cubic-bezier(.2, .8, .2, 1),
+      transform .8s cubic-bezier(.2, .8, .2, 1);
+    transition-delay: var(--d, 0s);
+  }
+  .reveal.up    { transform: translateY(40px); }
+  .reveal.left  { transform: translateX(-60px); }
+  .reveal.right { transform: translateX(60px); }
+  .reveal.zoom  { transform: scale(.85); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* Balayage : un voile couleur page se retire vers la droite */
+  .reveal.wipe { opacity: 1; }
+  .reveal.wipe::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #fbfaf7;
+    transform-origin: right;
+    transition: transform 1.1s cubic-bezier(.7, 0, .2, 1);
+  }
+  .reveal.wipe.visible::before { transform: scaleX(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { transition: none; opacity: 1; transform: none; }
+    .reveal.wipe::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" aria-hidden="true"></div>
+
+<header>
+  <div>
+    <div class="kicker reveal up">Carnet de voyage</div>
+    <h1 class="reveal up" style="--d:.1s">Trois semaines au bout du monde</h1>
+    <p class="reveal up" style="--d:.2s">Faites défiler la page : chaque bloc apparaît avec sa propre animation au moment où il entre dans l'écran.</p>
+    <a class="scroll-hint reveal up" style="--d:.35s" href="#start">
+      <span class="mouse"></span>Défiler
+    </a>
+  </div>
+</header>
+
+<main id="start">
+  <section>
+    <h2 class="reveal left">Le départ</h2>
+    <p class="reveal up">Tout a commencé par un billet acheté sur un coup de tête, un sac trop lourd et une carte pliée dans la poche. Les premiers jours ont été un mélange d'émerveillement et de fatigue.</p>
+    <p class="reveal up" style="--d:.1s">On apprend vite que les meilleurs moments sont rarement ceux que l'on avait prévus : une rencontre au détour d'un marché, un détour imposé par la pluie.</p>
+    <div class="media reveal wipe"></div>
+  </section>
+
+  <section>
+    <h2 class="reveal right">En chiffres</h2>
+    <p class="reveal up">Le voyage, résumé en quelques nombres — ils défilent quand ils entrent à l'écran.</p>
+    <div class="stats">
+      <div class="stat reveal zoom" style="--d:0s"><strong data-count="4280">0</strong><span>kilomètres parcourus</span></div>
+      <div class="stat reveal zoom" style="--d:.12s"><strong data-count="21">0</strong><span>jours sur la route</span></div>
+      <div class="stat reveal zoom" style="--d:.24s"><strong data-count="1342">0</strong><span>photos prises</span></div>
+    </div>
+  </section>
+
+  <section>
+    <blockquote class="reveal left">« Le voyage ne se mesure pas en kilomètres, mais en souvenirs. »</blockquote>
+    <h2 class="reveal up">Les étapes</h2>
+    <ul class="timeline">
+      <li class="reveal right" style="--d:0s"><b>Jour 1</b>Arrivée de nuit, première soupe brûlante dans une ruelle animée.</li>
+      <li class="reveal right" style="--d:.1s"><b>Jour 6</b>Randonnée au lever du soleil au-dessus d'une mer de nuages.</li>
+      <li class="reveal right" style="--d:.2s"><b>Jour 13</b>Trois jours de train à travers les plaines, sans réseau.</li>
+      <li class="reveal right" style="--d:.3s"><b>Jour 21</b>Retour, avec l'envie de repartir aussitôt.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="reveal up">La suite</h2>
+    <p class="reveal up">Les animations au défilement guident le regard sans gêner la lecture : elles restent courtes, se déclenchent une seule fois et respectent le réglage « réduire les animations » du système.</p>
+    <div class="media reveal zoom" style="background: linear-gradient(135deg, #0ea5e9, #6366f1 60%, #a855f7)"></div>
+  </section>
+</main>
+
+<footer>Fin de l'article · faites défiler vers le haut pour relire</footer>
+
+<script>
+  // 1. Révélation au défilement
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      if (entry.target.querySelector('[data-count]')) countUp(entry.target.querySelector('[data-count]'));
+      observer.unobserve(entry.target); // une seule fois
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // 2. Compteur animé
+  function countUp(el) {
+    const target = Number(el.dataset.count);
+    const duration = 1400;
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // 3. Barre de progression de lecture
+  const bar = document.querySelector('.progress');
+  function updateProgress() {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+  }
+  addEventListener('scroll', updateProgress, { passive: true });
+  addEventListener('resize', updateProgress);
+  updateProgress();
+</script>
+</body>
+</html>

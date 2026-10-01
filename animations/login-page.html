@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Page</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0f766e, #134e4a 55%, #042f2e);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #0f172a;
+  }
+
+  /* ---------- Vagues animées en bas de page ---------- */
+  .waves {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 38vh;
+    pointer-events: none;
+  }
+  .waves svg {
+    position: absolute;
+    bottom: 0;
+    width: 200%;
+    height: 100%;
+  }
+  .waves .w1 { animation: wave 14s linear infinite; opacity: .25; }
+  .waves .w2 { animation: wave 9s linear infinite reverse; opacity: .2; bottom: -10px; }
+  .waves .w3 { animation: wave 6s linear infinite; opacity: .15; bottom: -20px; }
+  @keyframes wave { to { transform: translateX(-50%); } }
+
+  /* Bulles qui montent */
+  .bubble {
+    position: fixed;
+    bottom: -40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, .35);
+    background: rgba(255, 255, 255, .06);
+    animation: bubble linear infinite;
+    pointer-events: none;
+  }
+  @keyframes bubble {
+    to { transform: translate(var(--x), -115vh); opacity: 0; }
+  }
+
+  /* ---------- Carte de connexion ---------- */
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 360px;
+    max-width: 100%;
+    padding: 34px 28px 28px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .3);
+    animation: card-in .9s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .card.shake { animation: shake .5s cubic-bezier(.36, .07, .19, .97); }
+
+  .avatar {
+    width: 64px;
+    height: 64px;
+    margin: -66px auto 14px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #14b8a6;
+    box-shadow: 0 10px 24px rgba(20, 184, 166, .45), 0 0 0 6px rgba(255, 255, 255, .9);
+    font-size: 28px;
+    transition: transform .4s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  .card.typing-password .avatar { transform: rotate(-12deg) scale(1.05); }
+
+  h1 { text-align: center; font-size: 22px; }
+  .sub { text-align: center; font-size: 14px; color: #64748b; margin: 4px 0 24px; }
+
+  /* Champs avec label flottant */
+  .field { position: relative; margin-bottom: 16px; }
+  .field input {
+    width: 100%;
+    padding: 20px 14px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field label {
+    position: absolute;
+    left: 16px;
+    top: 15px;
+    color: #94a3b8;
+    font-size: 15px;
+    pointer-events: none;
+    transform-origin: left top;
+    transition: transform .2s ease, color .2s ease;
+  }
+  .field input:focus { border-color: #14b8a6; box-shadow: 0 0 0 4px rgba(20, 184, 166, .15); }
+  .field input:focus + label,
+  .field input:not(:placeholder-shown) + label { transform: translateY(-9px) scale(.75); color: #0f766e; }
+  .field.error input { border-color: #ef4444; }
+  .field.error label { color: #ef4444; }
+
+  .toggle-pass {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 6px;
+  }
+
+  .msg {
+    min-height: 20px;
+    margin: -4px 0 10px;
+    font-size: 13px;
+    color: #ef4444;
+  }
+
+  /* Bouton : texte → spinner → coche */
+  .submit {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 12px;
+    background: #0f766e;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background .3s, width .4s cubic-bezier(.7, 0, .3, 1), border-radius .4s;
+  }
+  .submit:hover { background: #115e59; }
+  .submit .spin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    border: 3px solid rgba(255, 255, 255, .3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: spin .8s linear infinite;
+  }
+  .submit .ok { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; font-size: 22px; }
+  .submit.loading,
+  .submit.success { width: 50px; border-radius: 50%; margin-left: calc(50% - 25px); pointer-events: none; }
+  .submit.loading .txt,
+  .submit.success .txt { opacity: 0; }
+  .submit.loading .spin { opacity: 1; }
+  .submit.success { background: #22c55e; }
+  .submit.success .ok { opacity: 1; animation: pop .4s cubic-bezier(.34, 1.56, .64, 1); }
+
+  .hint { margin-top: 16px; text-align: center; font-size: 12px; color: #94a3b8; }
+
+  @keyframes card-in { from { opacity: 0; transform: translateY(40px) scale(.95); } }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pop { from { transform: scale(0); } }
+</style>
+</head>
+<body>
+
+<div class="waves" aria-hidden="true">
+  <svg class="w1" viewBox="0 0 2400 200" preserveAspectRatio="none"><path fill="#fff" d="M0 100 Q300 20 600 100 T1200 100 T1800 100 T2400 100 V200 H0z"/></svg>
+  <svg class="w2" viewBox="0 0 2400 200" preserveAspectRatio="none"><path fill="#fff" d="M0 120 Q300 60 600 120 T1200 120 T1800 120 T2400 120 V200 H0z"/></svg>
+  <svg class="w3" viewBox="0 0 2400 200" preserveAspectRatio="none"><path fill="#fff" d="M0 140 Q300 100 600 140 T1200 140 T1800 140 T2400 140 V200 H0z"/></svg>
+</div>
+
+<form class="card" id="card" novalidate>
+  <div class="avatar" aria-hidden="true">🐢</div>
+  <h1>Bon retour !</h1>
+  <p class="sub">Connectez-vous pour continuer</p>
+
+  <div class="field" id="f-email">
+    <input id="email" type="email" placeholder=" " autocomplete="username">
+    <label for="email">Adresse e-mail</label>
+  </div>
+  <div class="field" id="f-pass">
+    <input id="password" type="password" placeholder=" " autocomplete="current-password">
+    <label for="password">Mot de passe</label>
+    <button class="toggle-pass" type="button" aria-label="Afficher le mot de passe">Voir</button>
+  </div>
+
+  <p class="msg" id="msg" role="alert"></p>
+
+  <button class="submit" id="submit" type="submit">
+    <span class="txt">Se connecter</span>
+    <span class="spin" aria-hidden="true"></span>
+    <span class="ok" aria-hidden="true">✓</span>
+  </button>
+
+  <p class="hint">Astuce : laissez un champ vide pour voir l'animation d'erreur.</p>
+</form>
+
+<script>
+  const card = document.getElementById('card');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const submit = document.getElementById('submit');
+  const msg = document.getElementById('msg');
+
+  // Bulles décoratives
+  for (let i = 0; i < 14; i++) {
+    const b = document.createElement('span');
+    const size = 6 + Math.random() * 22;
+    b.className = 'bubble';
+    b.style.width = b.style.height = size + 'px';
+    b.style.left = Math.random() * 100 + '%';
+    b.style.setProperty('--x', (Math.random() * 80 - 40) + 'px');
+    b.style.animationDuration = 8 + Math.random() * 10 + 's';
+    b.style.animationDelay = -Math.random() * 15 + 's';
+    document.body.appendChild(b);
+  }
+
+  // L'avatar réagit quand on tape le mot de passe
+  password.addEventListener('focus', () => card.classList.add('typing-password'));
+  password.addEventListener('blur', () => card.classList.remove('typing-password'));
+
+  document.querySelector('.toggle-pass').addEventListener('click', e => {
+    const show = password.type === 'password';
+    password.type = show ? 'text' : 'password';
+    e.currentTarget.textContent = show ? 'Cacher' : 'Voir';
+  });
+
+  [email, password].forEach(input => input.addEventListener('input', () => {
+    input.parentElement.classList.remove('error');
+    msg.textContent = '';
+  }));
+
+  card.addEventListener('submit', e => {
+    e.preventDefault();
+    const emailOk = /\S+@\S+\.\S+/.test(email.value);
+    const passOk = password.value.length >= 4;
+    document.getElementById('f-email').classList.toggle('error', !emailOk);
+    document.getElementById('f-pass').classList.toggle('error', !passOk);
+
+    if (!emailOk || !passOk) {
+      msg.textContent = !emailOk ? 'Adresse e-mail invalide.' : 'Mot de passe trop court (4 caractères min.).';
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+      return;
+    }
+
+    // Simulation de connexion : chargement puis succès
+    msg.textContent = '';
+    submit.classList.add('loading');
+    setTimeout(() => {
+      submit.classList.replace('loading', 'success');
+      setTimeout(() => {
+        submit.classList.remove('success');
+        card.reset();
+      }, 1800);
+    }, 1400);
+  });
+</script>
+</body>
+</html>

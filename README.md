@@ -1,69 +1,106 @@
 # animations-gallery
 
-Galerie statique de micro-animations UI. Chaque animation est une page HTML
-autonome (HTML + CSS + JS, sans dépendance externe) ; la page `index.html` les
-présente avec un aperçu live et leur code source, prêt à copier.
+Galerie statique d'animations UI : des micro-interactions (boutons, loaders,
+notifications…) et des pages complètes animées (landing page, parallaxe,
+transitions…). Chaque animation est une page HTML autonome (HTML + CSS + JS,
+sans dépendance externe). La page `index.html` les présente, regroupées par
+catégorie, avec un aperçu live et leur code source prêt à copier.
 
 ## Structure
 
 ```
 animations-gallery/
-├── index.html              # galerie : liste, aperçu (iframe) et code source
+├── index.html              # galerie : catégories, recherche, pagination, aperçu et code
 ├── README.md
 └── animations/             # une page autonome par animation
     ├── order-confirm.html
     ├── like-button.html
+    ├── ripple-button.html
     ├── toggle-switch.html
     ├── loading-spinner.html
-    ├── toast-notification.html
     ├── skeleton-loader.html
-    ├── flip-card.html
-    ├── ripple-button.html
     ├── progress-bar.html
-    └── hamburger-menu.html
+    ├── toast-notification.html
+    ├── hamburger-menu.html
+    ├── flip-card.html
+    ├── landing-hero.html
+    ├── scroll-reveal.html
+    ├── page-transition.html
+    ├── parallax-scene.html
+    ├── pricing-page.html
+    └── login-page.html
 ```
 
 ## Animations
+
+### Boutons & contrôles
 
 | Fichier | Description |
 | --- | --- |
 | `order-confirm.html` | Bouton « Complete Order » : un camion traverse le bouton, dépose un colis, puis « Order Placed » s'affiche avec une coche animée (~10 s, relançable via la classe `.animate`). |
 | `like-button.html` | Cœur qui se remplit de rouge avec un effet « pop », un anneau et une explosion de particules colorées. |
-| `toggle-switch.html` | Interrupteur on/off accessible (checkbox native) : le knob glisse avec un léger rebond et le fond passe au vert. |
-| `loading-spinner.html` | Spinner circulaire en rotation continue, 100 % CSS. |
-| `toast-notification.html` | Notification qui glisse depuis le bas de l'écran, avec barre de temps restant, et disparaît après 2,5 s. |
-| `skeleton-loader.html` | Carte en squelette avec reflet « shimmer » pendant un chargement simulé, puis apparition en fondu du contenu. |
-| `flip-card.html` | Carte qui se retourne en 3D au survol (ou au toucher sur mobile) pour révéler son verso. |
 | `ripple-button.html` | Boutons avec onde « ripple » façon Material qui part du point de clic. |
+| `toggle-switch.html` | Interrupteur on/off accessible (checkbox native) : le knob glisse avec un léger rebond et le fond passe au vert. |
+
+### Chargement & feedback
+
+| Fichier | Description |
+| --- | --- |
+| `loading-spinner.html` | Spinner circulaire en rotation continue, 100 % CSS. |
+| `skeleton-loader.html` | Carte en squelette avec reflet « shimmer » pendant un chargement simulé, puis apparition en fondu du contenu. |
 | `progress-bar.html` | Barre de progression rayée et animée simulant un envoi de fichier, avec pourcentage et état terminé. |
+| `toast-notification.html` | Notification qui glisse depuis le bas de l'écran, avec barre de temps restant, et disparaît après 2,5 s. |
+
+### Navigation & cartes
+
+| Fichier | Description |
+| --- | --- |
 | `hamburger-menu.html` | Icône hamburger qui se transforme en croix et ouvre un menu déroulant aux liens échelonnés. |
+| `flip-card.html` | Carte qui se retourne en 3D au survol (ou au toucher sur mobile) pour révéler son verso. |
+
+### Pages complètes
+
+| Fichier | Description |
+| --- | --- |
+| `landing-hero.html` | Page d'accueil : fond de blobs colorés flottants, titre qui apparaît mot par mot, mot en dégradé animé, halo qui suit la souris et compteurs. |
+| `scroll-reveal.html` | Article long : les blocs apparaissent au défilement (fondu, glissement, zoom, balayage), compteurs animés et barre de progression de lecture. |
+| `page-transition.html` | Mini-site de 3 pages : un rideau en bandes recouvre l'écran entre deux pages, la pastille du menu glisse et le contenu entre en cascade. |
+| `parallax-scene.html` | Paysage de montagnes en couches qui bougent selon leur profondeur avec la souris et le défilement, étoiles scintillantes et nuages. |
+| `pricing-page.html` | Page de tarifs : interrupteur mensuel/annuel avec prix qui défilent, cartes en cascade et bordure en dégradé tournante sur l'offre phare. |
+| `login-page.html` | Page de connexion : vagues et bulles animées, labels flottants, secousse en cas d'erreur, bouton qui devient spinner puis coche. |
 
 ## Ajouter une nouvelle animation
 
 1. Créez un fichier dans `animations/`, par exemple `animations/mon-effet.html`.
    C'est une page HTML complète et autonome : CSS dans `<style>`, JS dans
-   `<script>`, une seule micro-animation, centrée dans la page.
+   `<script>`. Elle contient soit une seule micro-animation, soit une page
+   complète animée.
 2. Ajoutez une entrée au tableau `animations` en haut du script de
    `index.html` :
 
    ```js
-   { name: 'Mon effet', file: 'mon-effet.html', tags: 'mots clés' },
+   { name: 'Mon effet', file: 'mon-effet.html', category: 'Boutons & contrôles', tags: 'mots clés' },
    ```
 
-   Le champ `tags` est facultatif : ce sont des mots-clés supplémentaires
+   `category` doit être l'une des valeurs du tableau `categories` (juste
+   au-dessus) ; pour créer une nouvelle catégorie, ajoutez-la simplement à ce
+   tableau. Le champ `tags` est facultatif : ce sont des mots-clés supplémentaires
    utilisés par la recherche (par exemple `tags: 'bouton clic onde'`).
-3. Ajoutez une ligne dans le tableau ci-dessus du README.
+3. Ajoutez une ligne dans la bonne catégorie de la liste ci-dessus du README.
 
 L'animation apparaît alors dans la barre latérale ; elle est aussi accessible
 directement via `index.html#mon-effet.html`.
 
-## Recherche et pagination
+## Catégories, recherche et pagination
 
-- Le champ **Rechercher** filtre la liste par nom, nom de fichier et mots-clés
+- Les animations sont regroupées par catégorie dans la barre latérale ; les
+  boutons de filtre (Toutes, Boutons & contrôles, …, Pages complètes) limitent
+  la liste à une catégorie.
+- Le champ **Rechercher** filtre la liste par nom, nom de fichier, catégorie et mots-clés
   (`tags`). Il ignore les majuscules et les accents (« coeur » trouve « cœur »).
 - Raccourcis clavier : `/` pour aller dans la recherche, `Entrée` pour ouvrir le
   premier résultat, `Échap` pour effacer.
-- La liste est paginée (`PAGE_SIZE`, 6 par défaut, en haut du script de
+- La liste est paginée (`PAGE_SIZE`, 8 par défaut, en haut du script de
   `index.html`). La page qui contient l'animation affichée est ouverte
   automatiquement.
 
