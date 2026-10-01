@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointage équipe</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #fff;
+    --border: #e6e9f2;
+    --blue: #1e40af;
+    --navy: #172554;
+    --muted: #64748b;
+    --green: #16a34a;
+    --orange: #ea580c;
+    --red: #dc2626;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--navy);
+  }
+
+  .wrap { max-width: 820px; margin: 0 auto; }
+
+  /* ---------- En-tête avec anneau de présence ---------- */
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: 12px;
+    background: var(--card);
+    animation: rise .6s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .ring { position: relative; flex: none; width: 74px; height: 74px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 8; }
+  .ring .track { stroke: #eef1f7; }
+  .ring .bar {
+    stroke: var(--green);
+    stroke-linecap: round;
+    stroke-dasharray: 188.5;
+    stroke-dashoffset: 188.5;
+    transition: stroke-dashoffset .8s cubic-bezier(.2, .8, .2, 1);
+  }
+  .ring b {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .head h1 { font-size: 18px; }
+  .head p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .head .hours { margin-left: auto; text-align: right; }
+  .head .hours strong { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
+  .head .hours small { font-size: 12px; color: var(--muted); }
+
+  /* ---------- Onglets de filtre avec pastille glissante ---------- */
+  .tabs {
+    position: relative;
+    display: inline-flex;
+    padding: 4px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    background: #e8ecf5;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .tabs button {
+    position: relative;
+    z-index: 1;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .25s;
+  }
+  .tabs button[aria-selected="true"] { color: var(--navy); }
+  .tabs .pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    border-radius: 9px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(23, 37, 84, .1);
+    transition: left .35s cubic-bezier(.2, .8, .2, 1), width .35s cubic-bezier(.2, .8, .2, 1);
+  }
+  .tabs em { font-style: normal; opacity: .6; margin-left: 4px; }
+
+  /* ---------- Liste des ouvriers ---------- */
+  .list { list-style: none; display: grid; gap: 10px; }
+
+  .worker {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    transition: border-color .3s, background .3s, opacity .3s;
+  }
+  .worker.enter { animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 60ms); }
+  .worker.leave { animation: leave .3s ease forwards; }
+
+  .avatar {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    background: var(--c);
+  }
+  .avatar::after { /* pastille de statut */
+    content: "";
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #cbd5e1;
+    transition: background .3s;
+  }
+  .worker[data-status="present"] .avatar::after { background: var(--green); }
+  .worker[data-status="late"]    .avatar::after { background: var(--orange); }
+
+  .who strong { display: block; font-size: 15px; }
+  .who span { font-size: 13px; color: var(--muted); }
+  .who .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .who .meta b { color: var(--navy); font-variant-numeric: tabular-nums; }
+
+  .hours-bar { height: 5px; margin-top: 6px; border-radius: 999px; background: #eef1f7; overflow: hidden; max-width: 260px; }
+  .hours-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--blue); transition: width .8s cubic-bezier(.2, .8, .2, 1); }
+
+  /* Bouton Pointer → coche animée */
+  .clock-in {
+    position: relative;
+    min-width: 104px;
+    height: 38px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--blue);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background .3s, transform .1s;
+  }
+  .clock-in:active { transform: scale(.96); }
+  .clock-in svg {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    opacity: 0;
+  }
+  .clock-in svg path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; }
+  .worker[data-status="present"] .clock-in,
+  .worker[data-status="late"] .clock-in { background: #e8ecf5; color: var(--navy); }
+  .clock-in.done { background: var(--green) !important; color: transparent !important; pointer-events: none; }
+  .clock-in.done svg { opacity: 1; }
+  .clock-in.done svg path { animation: draw .4s .1s ease forwards; }
+
+  .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: 2px;
+  }
+  .badge.present { background: #dcfce7; color: var(--green); }
+  .badge.late    { background: #ffedd5; color: var(--orange); }
+  .badge.absent  { background: #f1f5f9; color: var(--muted); }
+
+  .empty { padding: 30px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  @keyframes rise  { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes leave { to { opacity: 0; transform: scale(.96); } }
+  @keyframes draw  { to { stroke-dashoffset: 0; } }
+
+  @media (max-width: 560px) {
+    .head { flex-wrap: wrap; }
+    .worker { grid-template-columns: auto 1fr; }
+    .clock-in { grid-column: 1 / -1; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="head">
+  <div class="ring">
+    <svg viewBox="0 0 74 74" aria-hidden="true"><circle class="track" cx="37" cy="37" r="30"/><circle class="bar" id="ring" cx="37" cy="37" r="30"/></svg>
+    <b id="ratio">0/0</b>
+  </div>
+  <div>
+    <h1>👷 Équipe du jour</h1>
+    <p id="today"></p>
+  </div>
+  <div class="hours">
+    <strong id="total-hours">0 h</strong>
+    <small>heures pointées</small>
+  </div>
+</section>
+
+<div class="tabs" role="tablist" id="tabs">
+  <span class="pill" aria-hidden="true"></span>
+  <button role="tab" data-filter="all" aria-selected="true">Tous<em></em></button>
+  <button role="tab" data-filter="present" aria-selected="false">Présents<em></em></button>
+  <button role="tab" data-filter="late" aria-selected="false">En retard<em></em></button>
+  <button role="tab" data-filter="absent" aria-selected="false">Non pointés<em></em></button>
+</div>
+
+<ul class="list" id="list"></ul>
+
+</div>
+
+<script>
+  // Équipe (à remplacer par vos données)
+  const team = [
+    { name: 'Kouassi Jean',    role: "Chef d'équipe",        color: '#1e40af', status: 'present', arrival: '06:52', hours: 8 },
+    { name: 'Diallo Mariam',   role: 'Maçonne',              color: '#7c3aed', status: 'present', arrival: '07:01', hours: 8 },
+    { name: 'Bamba Seydou',    role: 'Coffreur',             color: '#0891b2', status: 'late',    arrival: '07:48', hours: 7 },
+    { name: 'Traoré Ibrahim',  role: "Conducteur d'engin",   color: '#ea580c', status: 'present', arrival: '06:58', hours: 8 },
+    { name: 'Koné Aminata',    role: 'Ferrailleuse',         color: '#db2777', status: 'absent',  arrival: null,    hours: 0 },
+    { name: "N'Guessan Yao",   role: 'Manœuvre',             color: '#16a34a', status: 'absent',  arrival: null,    hours: 0 },
+    { name: 'Ouattara Moussa', role: 'Électricien',          color: '#ca8a04', status: 'absent',  arrival: null,    hours: 0 },
+  ];
+
+  const START = '07:30'; // au-delà, le pointage est compté en retard
+  const ORDER = { present: 0, late: 1, absent: 2 };
+  const LABELS = { present: 'Présent', late: 'En retard', absent: 'Non pointé' };
+
+  const list = document.getElementById('list');
+  const tabs = document.getElementById('tabs');
+  const pill = tabs.querySelector('.pill');
+  let filter = 'all';
+
+  document.getElementById('today').textContent =
+    new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · Chantier Résidence Les Palmiers';
+
+  const initials = name => name.split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
+
+  function rowHTML(w) {
+    return `
+      <div class="avatar" style="--c:${w.color}">${initials(w.name)}</div>
+      <div class="who">
+        <strong>${w.name}<span class="badge ${w.status}">${LABELS[w.status]}</span></strong>
+        <span>${w.role}</span>
+        <div class="meta">
+          <span>Arrivée <b>${w.arrival || '—'}</b></span>
+          <span>Heures <b>${w.hours} h</b></span>
+        </div>
+        <div class="hours-bar"><i style="width:0"></i></div>
+      </div>
+      <button class="clock-in" type="button">${w.status === 'absent' ? 'Pointer' : 'Pointé ✓'}
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </button>`;
+  }
+
+  // ----- Animation FLIP : les lignes glissent vers leur nouvelle position après un tri -----
+  function flip(mutate) {
+    const before = new Map([...list.children].map(el => [el.dataset.name, el.getBoundingClientRect().top]));
+    mutate();
+    [...list.children].forEach(el => {
+      const old = before.get(el.dataset.name);
+      if (old === undefined) return;
+      const dy = old - el.getBoundingClientRect().top;
+      if (!dy) return;
+      el.animate(
+        [{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }],
+        { duration: 500, easing: 'cubic-bezier(.2, .8, .2, 1)' }
+      );
+    });
+  }
+
+  function visibleTeam() {
+    return team
+      .filter(w => filter === 'all' || w.status === filter)
+      .sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.name.localeCompare(b.name));
+  }
+
+  function render({ animateIn = false } = {}) {
+    const items = visibleTeam();
+    const existing = new Map([...list.children].filter(el => el.dataset.name).map(el => [el.dataset.name, el]));
+    list.replaceChildren();
+
+    items.forEach((w, i) => {
+      let li = existing.get(w.name);
+      if (!li) {
+        li = document.createElement('li');
+        li.className = 'worker';
+        li.dataset.name = w.name;
+        li.classList.add('enter');
+        li.style.setProperty('--i', animateIn ? i : 0);
+      }
+      li.dataset.status = w.status;
+      li.innerHTML = rowHTML(w);
+      list.appendChild(li);
+      requestAnimationFrame(() => {
+        li.querySelector('.hours-bar i').style.width = (w.hours / 8) * 100 + '%';
+      });
+    });
+
+    if (!items.length) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'Personne dans cette catégorie 🎉';
+      list.appendChild(li);
+    }
+    updateHeader();
+  }
+
+  function updateHeader() {
+    const here = team.filter(w => w.status !== 'absent').length;
+    const ring = document.getElementById('ring');
+    ring.style.strokeDashoffset = 188.5 * (1 - here / team.length);
+    document.getElementById('ratio').textContent = `${here}/${team.length}`;
+    document.getElementById('total-hours').textContent = team.reduce((s, w) => s + w.hours, 0) + ' h';
+
+    const counts = { all: team.length, present: 0, late: 0, absent: 0 };
+    team.forEach(w => counts[w.status]++);
+    tabs.querySelectorAll('button').forEach(b => { b.querySelector('em').textContent = counts[b.dataset.filter]; });
+  }
+
+  function movePill() {
+    const active = tabs.querySelector('[aria-selected="true"]');
+    pill.style.left = active.offsetLeft + 'px';
+    pill.style.width = active.offsetWidth + 'px';
+  }
+
+  // Pointage : coche animée, puis l'ouvrier remonte dans la liste (FLIP)
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('.clock-in');
+    if (!btn) return;
+    const li = btn.closest('.worker');
+    const w = team.find(x => x.name === li.dataset.name);
+    if (w.status !== 'absent') return;
+
+    const now = new Date();
+    const time = now.toTimeString().slice(0, 5);
+    w.arrival = time;
+    w.status = time > START ? 'late' : 'present';
+    w.hours = Math.max(1, Math.min(8, 17 - now.getHours()));
+    btn.classList.add('done');
+
+    setTimeout(() => {
+      if (filter === 'absent') {
+        li.classList.add('leave');
+        li.addEventListener('animationend', () => flip(() => render()), { once: true });
+      } else {
+        flip(() => render());
+      }
+    }, 650);
+  });
+
+  tabs.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b === btn));
+    filter = btn.dataset.filter;
+    movePill();
+    list.replaceChildren(); // nouvelle liste : entrée en cascade
+    render({ animateIn: true });
+  });
+
+  render({ animateIn: true });
+  movePill();
+  addEventListener('resize', movePill);
+</script>
+</body>
+</html>

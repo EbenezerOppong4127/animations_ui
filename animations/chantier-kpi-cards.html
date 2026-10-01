@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chantier KPI Cards</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --border: #e6e9f2;
+    --blue: #1e40af;
+    --navy: #172554;
+    --muted: #64748b;
+    --icon-bg: #eef3ff;
+    --green: #16a34a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    padding: 24px 16px;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--navy);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 1100px;
+    margin: 0 auto 18px;
+  }
+  .toolbar h1 { font-size: 18px; }
+  .toolbar .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .toolbar .live::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: ping 1.6s ease-out infinite;
+  }
+  .toolbar button {
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--navy);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .2s;
+  }
+  .toolbar button:hover { box-shadow: 0 4px 14px rgba(30, 64, 175, .12); }
+  .toolbar button:active { transform: scale(.97); }
+
+  /* ---------- Cartes ---------- */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 22px 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    overflow: hidden;
+    animation: card-in .7s cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(var(--i) * .12s);
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1), box-shadow .3s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(23, 37, 84, .1); }
+
+  /* Bordure gauche qui se dessine de haut en bas */
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--blue);
+    transform: scaleY(0);
+    transform-origin: top;
+    animation: grow-y .6s cubic-bezier(.7, 0, .3, 1) forwards;
+    animation-delay: calc(.3s + var(--i) * .12s);
+  }
+
+  .icon {
+    position: relative;
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: var(--icon-bg);
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    overflow: hidden;
+    transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  .card:hover .icon { transform: scale(1.08) rotate(-3deg); }
+  .icon span { display: inline-block; line-height: 1; }
+
+  .label { font-size: 14px; color: var(--navy); }
+  .value {
+    position: relative;
+    height: 46px;
+    margin: 6px 0 4px;
+    overflow: hidden;
+    font-size: 34px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 46px;
+  }
+  .value .num { display: inline-block; }
+  .value .num.out { position: absolute; left: 0; animation: num-out .45s cubic-bezier(.7, 0, .3, 1) forwards; }
+  .value .num.in  { animation: num-in .45s cubic-bezier(.2, .8, .2, 1); }
+  .delta {
+    position: absolute;
+    left: 52px;
+    top: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+    animation: delta 1.4s ease forwards;
+  }
+  .delta.up   { background: #dcfce7; color: var(--green); }
+  .delta.down { background: #fee2e2; color: #dc2626; }
+  .sub { font-size: 13px; color: var(--muted); }
+
+  /* Barre d'objectif sous la carte */
+  .goal {
+    margin-top: 10px;
+    height: 5px;
+    border-radius: 999px;
+    background: #eef1f7;
+    overflow: hidden;
+  }
+  .goal i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3b82f6, var(--blue));
+    transition: width 1s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* ---------- Icône 1 : ouvrier qui travaille ---------- */
+  .worker span { animation: hammer 1.2s ease-in-out infinite; transform-origin: 50% 90%; }
+  .worker .pulse {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: ping 1.6s ease-out infinite;
+  }
+  .worker .spark {
+    position: absolute;
+    left: 12px;
+    bottom: 14px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #f59e0b;
+    opacity: 0;
+    animation: spark 1.2s ease-out infinite;
+  }
+  .worker .spark:nth-of-type(2) { --dx: -10px; animation-delay: .05s; }
+  .worker .spark:nth-of-type(3) { --dx: 8px; animation-delay: .1s; }
+
+  /* ---------- Icône 2 : engin qui roule ---------- */
+  .engine span { animation: bump .35s ease-in-out infinite alternate; }
+  .engine .road {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, #94a3b8 0 6px, transparent 6px 12px);
+    animation: road .5s linear infinite;
+  }
+  .engine .dust {
+    position: absolute;
+    right: 8px;
+    bottom: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    opacity: 0;
+    animation: dust 1s ease-out infinite;
+  }
+  .engine .dust:nth-of-type(3) { animation-delay: .5s; }
+
+  /* ---------- Icône 3 : poignée de main ---------- */
+  .hands span { animation: shake 2.4s ease-in-out infinite; }
+  .hands .heart {
+    position: absolute;
+    top: 6px;
+    font-size: 12px;
+    opacity: 0;
+    animation: float-up 2.4s ease-out infinite;
+  }
+  .hands .heart:nth-of-type(1) { left: 14px; }
+  .hands .heart:nth-of-type(2) { right: 12px; animation-delay: .3s; }
+
+  @keyframes card-in  { from { opacity: 0; transform: translateY(24px); } }
+  @keyframes grow-y   { to { transform: scaleY(1); } }
+  @keyframes ping     { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .5); } 100% { box-shadow: 0 0 0 9px rgba(22, 163, 74, 0); } }
+  @keyframes hammer   { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-10deg); } 35% { transform: rotate(6deg) translateY(1px); } 50% { transform: rotate(0); } }
+  @keyframes spark    { 0%, 30% { opacity: 0; transform: translate(0, 0); } 35% { opacity: 1; } 70% { opacity: 0; transform: translate(var(--dx, 0), -14px); } 100% { opacity: 0; } }
+  @keyframes bump     { from { transform: translateY(0) rotate(0); } to { transform: translateY(-2px) rotate(-1.5deg); } }
+  @keyframes road     { to { background-position: 12px 0; } }
+  @keyframes dust     { 0% { opacity: .9; transform: translate(0, 0) scale(.6); } 100% { opacity: 0; transform: translate(14px, -8px) scale(1.6); } }
+  @keyframes shake    { 0%, 55%, 100% { transform: rotate(0) translateY(0); } 62% { transform: rotate(-8deg) translateY(-2px); } 70% { transform: rotate(6deg) translateY(2px); } 78% { transform: rotate(-6deg) translateY(-2px); } 86% { transform: rotate(4deg) translateY(1px); } }
+  @keyframes float-up { 0%, 60% { opacity: 0; transform: translateY(8px) scale(.6); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px) scale(1); } }
+  @keyframes num-out  { to { transform: translateY(-100%); opacity: 0; } }
+  @keyframes num-in   { from { transform: translateY(100%); opacity: 0; } }
+  @keyframes delta    { 0% { opacity: 0; transform: translateY(6px); } 15%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Rapport du jour <span class="live">En direct</span></h1>
+  <button type="button" id="simulate">↻ Simuler une mise à jour</button>
+</div>
+
+<div class="cards">
+  <article class="card" style="--i:0">
+    <div class="icon worker" aria-hidden="true">
+      <span>👷</span><i class="pulse"></i><i class="spark"></i><i class="spark"></i>
+    </div>
+    <div class="body">
+      <p class="label">Effectif total du jour</p>
+      <div class="value" data-key="workers"><span class="num">0</span></div>
+      <p class="sub"><b data-key="hours">0</b> heures pointées</p>
+      <div class="goal" title="Objectif : 40 h"><i data-goal="hours" data-max="40"></i></div>
+    </div>
+  </article>
+
+  <article class="card" style="--i:1">
+    <div class="icon engine" aria-hidden="true">
+      <span>🚜</span><i class="road"></i><i class="dust"></i><i class="dust"></i>
+    </div>
+    <div class="body">
+      <p class="label">Engins mobilisés</p>
+      <div class="value" data-key="engines"><span class="num">0</span></div>
+      <p class="sub">Matériel de l'équipe</p>
+      <div class="goal" title="Parc : 5 engins"><i data-goal="engines" data-max="5"></i></div>
+    </div>
+  </article>
+
+  <article class="card" style="--i:2">
+    <div class="icon hands" aria-hidden="true">
+      <span>🤝</span><i class="heart">✨</i><i class="heart">✨</i>
+    </div>
+    <div class="body">
+      <p class="label">Sous-traitants</p>
+      <div class="value" data-key="subs"><span class="num">0</span></div>
+      <p class="sub">Intervenants externes</p>
+      <div class="goal" title="Prévu : 3"><i data-goal="subs" data-max="3"></i></div>
+    </div>
+  </article>
+</div>
+
+<script>
+  // Données du jour (à remplacer par celles de votre API)
+  const state = { workers: 3, hours: 24, engines: 2, subs: 1 };
+
+  // Compteur qui monte de 0 jusqu'à la valeur au chargement
+  function countUp(el, to, delay) {
+    const start = performance.now() + delay;
+    const duration = 900;
+    (function frame(now) {
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
+      el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(frame);
+    })(performance.now());
+  }
+
+  // Changement de valeur : l'ancien chiffre sort par le haut, le nouveau entre par le bas
+  function flipNumber(box, from, to) {
+    const old = box.querySelector('.num:not(.out)');
+    old.classList.add('out');
+    old.addEventListener('animationend', () => old.remove(), { once: true });
+    const next = document.createElement('span');
+    next.className = 'num in';
+    next.textContent = to;
+    box.appendChild(next);
+
+    const diff = to - from;
+    const badge = document.createElement('span');
+    badge.className = 'delta ' + (diff > 0 ? 'up' : 'down');
+    badge.textContent = (diff > 0 ? '+' : '') + diff;
+    box.appendChild(badge);
+    badge.addEventListener('animationend', () => badge.remove(), { once: true });
+  }
+
+  function updateGoals() {
+    document.querySelectorAll('[data-goal]').forEach(bar => {
+      const v = state[bar.dataset.goal];
+      bar.style.width = Math.min(100, (v / Number(bar.dataset.max)) * 100) + '%';
+    });
+  }
+
+  // Affichage initial
+  document.querySelectorAll('.value[data-key]').forEach((box, i) => {
+    countUp(box.querySelector('.num'), state[box.dataset.key], 400 + i * 120);
+  });
+  countUp(document.querySelector('[data-key="hours"]'), state.hours, 500);
+  setTimeout(updateGoals, 600);
+
+  // Simulation : une personne arrive / part, un engin est ajouté, etc.
+  document.getElementById('simulate').addEventListener('click', () => {
+    const keys = ['workers', 'engines', 'subs'];
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    const from = state[key];
+    const to = Math.max(0, from + (Math.random() < .7 || from === 0 ? 1 : -1));
+    state[key] = to;
+    flipNumber(document.querySelector(`.value[data-key="${key}"]`), from, to);
+
+    if (key === 'workers') {
+      const hoursEl = document.querySelector('[data-key="hours"]');
+      state.hours = Math.max(0, state.hours + (to - from) * 8);
+      hoursEl.textContent = state.hours;
+    }
+    updateGoals();
+  });
+</script>
+</body>
+</html>

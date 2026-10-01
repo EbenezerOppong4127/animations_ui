@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engins de chantier</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #fff;
+    --border: #e6e9f2;
+    --blue: #1e40af;
+    --navy: #172554;
+    --muted: #64748b;
+    --yellow: #f59e0b;
+    --green: #16a34a;
+    --orange: #ea580c;
+    --red: #dc2626;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--navy);
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  header h1 { font-size: 20px; }
+  header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .summary { display: flex; gap: 8px; flex-wrap: wrap; }
+  .summary span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .summary b { font-variant-numeric: tabular-nums; display: inline-block; }
+  .summary b.bump { animation: bump .4s ease; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ---------- Ligne d'engin ---------- */
+  .machine {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 18px;
+    align-items: center;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: 12px;
+    background: var(--card);
+    animation: row-in .7s cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(var(--i) * .12s);
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .machine:hover { box-shadow: 0 12px 28px rgba(23, 37, 84, .08); }
+  .machine.paused { border-left-color: var(--orange); }
+  .machine.broken { border-left-color: var(--red); }
+
+  .scene {
+    position: relative;
+    height: 120px;
+    border-radius: 10px;
+    background: linear-gradient(#e0ecff, #f3f7ff 70%, #e9dcc8 70%);
+    overflow: hidden;
+  }
+  .scene svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .machine.broken .scene svg { filter: grayscale(.8) brightness(.95); }
+
+  /* En pause ou en panne : toutes les animations de la scène s'arrêtent */
+  .machine.paused .scene *,
+  .machine.broken .scene * { animation-play-state: paused !important; }
+
+  .warning {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .machine.broken .warning { opacity: 1; animation: blink 1s steps(2, start) infinite !important; animation-play-state: running !important; }
+  .smoke {
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6b7280;
+    opacity: 0;
+  }
+  .machine.broken .smoke { animation: broken-smoke 2s ease-out infinite !important; animation-play-state: running !important; }
+  .machine.broken .smoke:nth-of-type(2) { animation-delay: .7s !important; }
+
+  .info { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; }
+  .info h2 { font-size: 16px; }
+  .info .op { font-size: 13px; color: var(--muted); grid-column: 1; }
+
+  .status {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #dcfce7;
+    color: var(--green);
+    transition: background .3s, color .3s;
+  }
+  .status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ping 1.6s ease-out infinite;
+  }
+  .machine.paused .status { background: #ffedd5; color: var(--orange); }
+  .machine.broken .status { background: #fee2e2; color: var(--red); }
+  .machine.paused .status::before,
+  .machine.broken .status::before { animation: none; }
+
+  .metrics {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .metric small { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .metric strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+
+  .fuel { height: 8px; margin-top: 6px; border-radius: 999px; background: #eef1f7; overflow: hidden; }
+  .fuel i { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width .8s ease, background .4s; }
+  .fuel i.low { background: var(--red); animation: blink 1s ease-in-out infinite; }
+
+  .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .actions button {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--navy);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+  }
+  .actions button:hover { background: #f1f5ff; }
+  .actions button:active { transform: scale(.96); }
+  .actions .danger { color: var(--red); }
+
+  /* ================= Animations des engins (SVG) ================= */
+  svg * { transform-box: view-box; }
+
+  /* Sol qui défile (engins en déplacement) */
+  .road { stroke: #b8a588; stroke-width: 3; stroke-dasharray: 12 12; }
+
+  /* --- Pelleteuse --- */
+  .ex-boom   { transform-origin: 112px 62px; animation: ex-boom 3.2s ease-in-out infinite; }
+  .ex-stick  { transform-origin: 150px 32px; animation: ex-stick 3.2s ease-in-out infinite; }
+  .ex-bucket { transform-origin: 168px 74px; animation: ex-bucket 3.2s ease-in-out infinite; }
+  .ex-dirt   { animation: ex-dirt 3.2s ease-out infinite; opacity: 0; }
+  .ex-dirt:nth-child(2) { animation-delay: .08s; }
+  .ex-dirt:nth-child(3) { animation-delay: .16s; }
+  .ex-cab    { transform-origin: 75px 70px; animation: ex-swing 6.4s ease-in-out infinite; }
+
+  @keyframes ex-boom   { 0%, 100% { transform: rotate(-6deg); } 35%, 50% { transform: rotate(16deg); } 75% { transform: rotate(-12deg); } }
+  @keyframes ex-stick  { 0%, 100% { transform: rotate(-10deg); } 35% { transform: rotate(-4deg); } 50% { transform: rotate(22deg); } 75% { transform: rotate(10deg); } }
+  @keyframes ex-bucket { 0%, 100% { transform: rotate(0); } 35% { transform: rotate(-20deg); } 50%, 75% { transform: rotate(40deg); } }
+  @keyframes ex-dirt   { 0%, 40% { opacity: 0; transform: translate(0, 0); } 45% { opacity: 1; } 70% { opacity: 0; transform: translate(-6px, -14px); } 100% { opacity: 0; } }
+  @keyframes ex-swing  { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-1.5deg); } }
+
+  /* --- Bulldozer --- */
+  .dz       { animation: dz-move 4s ease-in-out infinite; }
+  .dz-tread { stroke-dasharray: 5 4; animation: tread .4s linear infinite; }
+  .dz-pile  { transform-origin: 178px 96px; animation: dz-pile 4s ease-in-out infinite; }
+  .exhaust  { opacity: 0; animation: exhaust 1.4s ease-out infinite; }
+  .exhaust:nth-of-type(2) { animation-delay: .7s; }
+
+  @keyframes dz-move  { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(14px); } }
+  @keyframes dz-pile  { 0%, 100% { transform: scale(.4); } 50% { transform: scale(1.1); } 60% { transform: scale(1); } }
+  @keyframes tread    { to { stroke-dashoffset: -9; } }
+  @keyframes exhaust  { 0% { opacity: .7; transform: translate(0, 0) scale(.5); } 100% { opacity: 0; transform: translate(-8px, -18px) scale(1.6); } }
+
+  /* --- Camion benne : roule, s'arrête, vide sa benne --- */
+  .tk-road  { animation: tk-road 6s linear infinite; }
+  .tk-wheel { animation: tk-wheel 6s linear infinite; }
+  .tk-body  { animation: tk-bump 6s linear infinite; }
+  .tk-bed   { transform-origin: 34px 74px; animation: tk-bed 6s ease-in-out infinite; }
+  .tk-load  { animation: tk-load 6s ease-in infinite; opacity: 0; }
+  .tk-load:nth-of-type(2) { animation-delay: .1s; }
+  .tk-load:nth-of-type(3) { animation-delay: .2s; }
+
+  @keyframes tk-road  { 0% { stroke-dashoffset: 0; } 50%, 100% { stroke-dashoffset: 120; } }
+  @keyframes tk-wheel { 0% { transform: rotate(0); } 50%, 100% { transform: rotate(720deg); } }
+  @keyframes tk-bump  { 0%, 10%, 20%, 30%, 40% { transform: translateY(0); } 5%, 15%, 25%, 35%, 45% { transform: translateY(-1.5px); } 50%, 100% { transform: translateY(0); } }
+  @keyframes tk-bed   { 0%, 55% { transform: rotate(0); } 68%, 82% { transform: rotate(-32deg); } 95%, 100% { transform: rotate(0); } }
+  @keyframes tk-load  { 0%, 66% { opacity: 0; transform: translate(0, 0); } 68% { opacity: 1; } 84% { opacity: 1; transform: translate(-6px, 30px); } 86%, 100% { opacity: 0; transform: translate(-6px, 30px); } }
+
+  /* --- Rouleau compacteur --- */
+  .rl      { animation: rl-move 5s ease-in-out infinite; }
+  .rl-vib  { animation: vibrate .08s linear infinite; }
+  .rl-drum { animation: rl-drum 5s ease-in-out infinite; }
+  .rl-done { transform-origin: 20px 96px; animation: rl-done 5s ease-in-out infinite; }
+
+  @keyframes rl-move { 0%, 100% { transform: translateX(-30px); } 50% { transform: translateX(22px); } }
+  @keyframes rl-drum { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(320deg); } }
+  @keyframes rl-done { 0%, 100% { transform: scaleX(.5); } 50% { transform: scaleX(1); } }
+  @keyframes vibrate { 50% { transform: translateY(.8px); } }
+
+  /* Les roues tournent autour de leur propre centre */
+  .spin { transform-box: fill-box !important; transform-origin: center !important; }
+
+  /* ---------- Divers ---------- */
+  @keyframes row-in { from { opacity: 0; transform: translateX(-24px); } }
+  @keyframes ping   { 0% { box-shadow: 0 0 0 0 currentColor; } 100% { box-shadow: 0 0 0 7px transparent; } }
+  @keyframes blink  { 50% { opacity: .35; } }
+  @keyframes bump   { 40% { transform: translateY(-4px) scale(1.15); } }
+  @keyframes broken-smoke { 0% { opacity: .6; transform: translate(0, 0) scale(.6); } 100% { opacity: 0; transform: translate(10px, -40px) scale(2.4); } }
+
+  @media (max-width: 640px) {
+    .machine { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>🚜 Engins mobilisés</h1>
+    <p>Suivi en temps réel du matériel sur le chantier</p>
+  </div>
+  <div class="summary">
+    <span><i class="dot" style="background:var(--green)"></i>En marche <b id="sum-run">0</b></span>
+    <span><i class="dot" style="background:var(--orange)"></i>En pause <b id="sum-pause">0</b></span>
+    <span><i class="dot" style="background:var(--red)"></i>En panne <b id="sum-broken">0</b></span>
+  </div>
+</header>
+
+<!-- ============ Pelleteuse ============ -->
+<article class="machine" style="--i:0" data-hours="11565" data-fuel="72">
+  <div class="scene">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <path d="M150 100 q14 -14 30 0z" fill="#a1876a"/>
+      <g class="ex-cab">
+        <rect x="26" y="82" width="96" height="16" rx="8" fill="#374151"/>
+        <circle cx="38" cy="90" r="5" fill="#6b7280"/><circle cx="74" cy="90" r="5" fill="#6b7280"/><circle cx="110" cy="90" r="5" fill="#6b7280"/>
+        <rect x="34" y="60" width="84" height="22" rx="4" fill="#f59e0b"/>
+        <rect x="40" y="36" width="32" height="26" rx="3" fill="#f59e0b"/>
+        <rect x="45" y="40" width="22" height="14" rx="2" fill="#bfdbfe"/>
+        <rect x="96" y="52" width="6" height="10" fill="#4b5563"/>
+      </g>
+      <g class="ex-boom">
+        <path d="M108 66 L146 26 L156 34 L116 70z" fill="#d97706"/>
+        <g class="ex-stick">
+          <path d="M146 28 L156 30 L172 74 L164 76z" fill="#b45309"/>
+          <g class="ex-bucket">
+            <path d="M160 72 L180 72 L178 86 Q168 92 160 84z" fill="#4b5563"/>
+            <g>
+              <circle class="ex-dirt" cx="170" cy="74" r="2.5" fill="#8b6b4a"/>
+              <circle class="ex-dirt" cx="175" cy="73" r="2" fill="#8b6b4a"/>
+              <circle class="ex-dirt" cx="165" cy="73" r="2" fill="#8b6b4a"/>
+            </g>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <span class="smoke"></span><span class="smoke"></span>
+    <span class="warning">⚠️</span>
+  </div>
+  <div class="info">
+    <h2>Pelleteuse CAT 320</h2>
+    <span class="status">En marche</span>
+    <p class="op">Conducteur : Kofi Mensah · Terrassement zone B</p>
+    <div class="metrics">
+      <div class="metric"><small>Compteur horaire</small><strong class="clock">--</strong></div>
+      <div class="metric"><small>Carburant</small><strong class="fuel-txt">--</strong><div class="fuel"><i></i></div></div>
+    </div>
+    <div class="actions">
+      <button type="button" data-action="toggle">⏸ Mettre en pause</button>
+      <button type="button" data-action="break" class="danger">⚠ Signaler une panne</button>
+    </div>
+  </div>
+</article>
+
+<!-- ============ Bulldozer ============ -->
+<article class="machine" style="--i:1" data-hours="7240" data-fuel="48">
+  <div class="scene">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <g class="dz">
+        <path class="dz-pile" d="M164 98 q14 -22 30 0z" fill="#a1876a"/>
+        <rect x="40" y="80" width="100" height="18" rx="9" fill="#374151"/>
+        <rect class="dz-tread" x="43" y="83" width="94" height="12" rx="6" fill="none" stroke="#9ca3af" stroke-width="2"/>
+        <rect x="46" y="58" width="88" height="24" rx="4" fill="#f59e0b"/>
+        <rect x="56" y="34" width="36" height="26" rx="3" fill="#f59e0b"/>
+        <rect x="61" y="38" width="26" height="14" rx="2" fill="#bfdbfe"/>
+        <rect x="110" y="44" width="5" height="16" fill="#4b5563"/>
+        <circle class="exhaust" cx="112" cy="40" r="5" fill="#9ca3af"/>
+        <circle class="exhaust" cx="112" cy="40" r="5" fill="#9ca3af"/>
+        <path d="M134 66 L150 62 L158 100 L146 100z" fill="#6b7280"/>
+        <rect x="132" y="70" width="18" height="5" fill="#4b5563"/>
+      </g>
+    </svg>
+    <span class="smoke"></span><span class="smoke"></span>
+    <span class="warning">⚠️</span>
+  </div>
+  <div class="info">
+    <h2>Bulldozer D6</h2>
+    <span class="status">En marche</span>
+    <p class="op">Conducteur : Awa Koné · Nivellement plateforme</p>
+    <div class="metrics">
+      <div class="metric"><small>Compteur horaire</small><strong class="clock">--</strong></div>
+      <div class="metric"><small>Carburant</small><strong class="fuel-txt">--</strong><div class="fuel"><i></i></div></div>
+    </div>
+    <div class="actions">
+      <button type="button" data-action="toggle">⏸ Mettre en pause</button>
+      <button type="button" data-action="break" class="danger">⚠ Signaler une panne</button>
+    </div>
+  </div>
+</article>
+
+<!-- ============ Camion benne ============ -->
+<article class="machine" style="--i:2" data-hours="3300" data-fuel="18">
+  <div class="scene">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <line class="road tk-road" x1="0" y1="104" x2="200" y2="104"/>
+      <g class="tk-body">
+        <rect x="30" y="74" width="140" height="8" fill="#374151"/>
+        <path d="M140 46 L162 46 L172 62 L172 80 L140 80z" fill="#2563eb"/>
+        <path d="M146 50 L160 50 L167 62 L146 62z" fill="#bfdbfe"/>
+        <g class="tk-bed">
+          <path d="M30 46 L134 46 L130 74 L34 74z" fill="#f59e0b"/>
+          <path d="M38 46 q20 -16 40 -4 q20 -14 48 2z" fill="#8b6b4a"/>
+          <circle class="tk-load" cx="34" cy="60" r="3" fill="#8b6b4a"/>
+          <circle class="tk-load" cx="36" cy="66" r="2.5" fill="#8b6b4a"/>
+          <circle class="tk-load" cx="33" cy="54" r="2" fill="#8b6b4a"/>
+        </g>
+      </g>
+      <g>
+        <g class="tk-wheel spin"><circle cx="52" cy="90" r="11" fill="#1f2937"/><circle cx="52" cy="90" r="4" fill="#9ca3af"/><rect x="51" y="80" width="2" height="20" fill="#4b5563"/></g>
+        <g class="tk-wheel spin"><circle cx="78" cy="90" r="11" fill="#1f2937"/><circle cx="78" cy="90" r="4" fill="#9ca3af"/><rect x="77" y="80" width="2" height="20" fill="#4b5563"/></g>
+        <g class="tk-wheel spin"><circle cx="154" cy="90" r="11" fill="#1f2937"/><circle cx="154" cy="90" r="4" fill="#9ca3af"/><rect x="153" y="80" width="2" height="20" fill="#4b5563"/></g>
+      </g>
+    </svg>
+    <span class="smoke"></span><span class="smoke"></span>
+    <span class="warning">⚠️</span>
+  </div>
+  <div class="info">
+    <h2>Camion benne Volvo FMX</h2>
+    <span class="status">En marche</span>
+    <p class="op">Chauffeur : Yao N'Guessan · Évacuation des déblais</p>
+    <div class="metrics">
+      <div class="metric"><small>Compteur horaire</small><strong class="clock">--</strong></div>
+      <div class="metric"><small>Carburant</small><strong class="fuel-txt">--</strong><div class="fuel"><i></i></div></div>
+    </div>
+    <div class="actions">
+      <button type="button" data-action="toggle">⏸ Mettre en pause</button>
+      <button type="button" data-action="break" class="danger">⚠ Signaler une panne</button>
+    </div>
+  </div>
+</article>
+
+<!-- ============ Rouleau compacteur ============ -->
+<article class="machine" style="--i:3" data-hours="980" data-fuel="90">
+  <div class="scene">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <rect class="rl-done" x="20" y="96" width="160" height="6" fill="#4b5563"/>
+      <g class="rl">
+        <g class="rl-vib">
+          <rect x="62" y="56" width="62" height="24" rx="4" fill="#f59e0b"/>
+          <rect x="70" y="32" width="30" height="26" rx="3" fill="#f59e0b"/>
+          <rect x="75" y="36" width="20" height="14" rx="2" fill="#bfdbfe"/>
+          <rect x="118" y="62" width="18" height="8" fill="#4b5563"/>
+          <g class="rl-drum spin"><circle cx="146" cy="82" r="16" fill="#9ca3af"/><circle cx="146" cy="82" r="16" fill="none" stroke="#6b7280" stroke-width="3" stroke-dasharray="6 6"/><circle cx="146" cy="82" r="4" fill="#4b5563"/></g>
+          <g class="rl-drum spin"><circle cx="70" cy="86" r="12" fill="#1f2937"/><circle cx="70" cy="86" r="4" fill="#9ca3af"/><rect x="69" y="76" width="2" height="20" fill="#4b5563"/></g>
+        </g>
+      </g>
+    </svg>
+    <span class="smoke"></span><span class="smoke"></span>
+    <span class="warning">⚠️</span>
+  </div>
+  <div class="info">
+    <h2>Rouleau compacteur Bomag</h2>
+    <span class="status">En marche</span>
+    <p class="op">Conducteur : Ibrahim Traoré · Compactage voirie</p>
+    <div class="metrics">
+      <div class="metric"><small>Compteur horaire</small><strong class="clock">--</strong></div>
+      <div class="metric"><small>Carburant</small><strong class="fuel-txt">--</strong><div class="fuel"><i></i></div></div>
+    </div>
+    <div class="actions">
+      <button type="button" data-action="toggle">⏸ Mettre en pause</button>
+      <button type="button" data-action="break" class="danger">⚠ Signaler une panne</button>
+    </div>
+  </div>
+</article>
+
+</div>
+
+<script>
+  const machines = [...document.querySelectorAll('.machine')].map(el => ({
+    el,
+    seconds: Number(el.dataset.hours) * 1, // secondes de travail déjà effectuées aujourd'hui
+    fuel: Number(el.dataset.fuel),
+    state: 'run', // run | pause | broken
+  }));
+
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = s => `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+
+  function render(m) {
+    const labels = { run: 'En marche', pause: 'En pause', broken: 'En panne' };
+    m.el.classList.toggle('paused', m.state === 'pause');
+    m.el.classList.toggle('broken', m.state === 'broken');
+    m.el.querySelector('.status').textContent = labels[m.state];
+    m.el.querySelector('.clock').textContent = fmt(m.seconds);
+    m.el.querySelector('.fuel-txt').textContent = Math.round(m.fuel) + ' %';
+    const bar = m.el.querySelector('.fuel i');
+    bar.style.width = m.fuel + '%';
+    bar.classList.toggle('low', m.fuel < 20);
+
+    const toggle = m.el.querySelector('[data-action="toggle"]');
+    const brk = m.el.querySelector('[data-action="break"]');
+    toggle.textContent = m.state === 'run' ? '⏸ Mettre en pause' : '▶ Remettre en marche';
+    brk.hidden = m.state === 'broken';
+  }
+
+  // Résumé en haut : compte les engins par état, avec petit rebond si ça change
+  function renderSummary() {
+    const count = s => machines.filter(m => m.state === s).length;
+    [['sum-run', 'run'], ['sum-pause', 'pause'], ['sum-broken', 'broken']].forEach(([id, s]) => {
+      const el = document.getElementById(id);
+      const v = String(count(s));
+      if (el.textContent !== v) {
+        el.textContent = v;
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
+      }
+    });
+  }
+
+  machines.forEach(m => {
+    m.el.addEventListener('click', e => {
+      const action = e.target.dataset.action;
+      if (!action) return;
+      if (action === 'toggle') m.state = m.state === 'run' ? 'pause' : 'run';
+      if (action === 'break') m.state = 'broken';
+      render(m);
+      renderSummary();
+    });
+    render(m);
+  });
+  renderSummary();
+
+  // Chaque seconde : le compteur horaire avance et le carburant baisse pour les engins en marche
+  setInterval(() => {
+    machines.forEach(m => {
+      if (m.state !== 'run') return;
+      m.seconds += 1;
+      m.fuel = Math.max(0, m.fuel - 0.05);
+      render(m);
+    });
+  }, 1000);
+</script>
+</body>
+</html>

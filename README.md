@@ -1,6 +1,7 @@
 # animations-gallery
 
-Galerie statique d'animations UI : des micro-interactions (boutons, loaders,
+Galerie statique d'animations UI : des écrans animés pour une application de
+rapport journalier de chantier, des micro-interactions (boutons, loaders,
 notifications…) et des pages complètes animées (landing page, parallaxe,
 transitions…). Chaque animation est une page HTML autonome (HTML + CSS + JS,
 sans dépendance externe). La page `index.html` les présente, regroupées par
@@ -13,6 +14,11 @@ animations-gallery/
 ├── index.html              # galerie : catégories, recherche, pagination, aperçu et code
 ├── README.md
 └── animations/             # une page autonome par animation
+    ├── chantier-kpi-cards.html
+    ├── engins-chantier.html
+    ├── equipe-pointage.html
+    ├── sous-traitants.html
+    ├── rapport-journalier.html
     ├── order-confirm.html
     ├── like-button.html
     ├── ripple-button.html
@@ -32,6 +38,20 @@ animations-gallery/
 ```
 
 ## Animations
+
+### Rapport de chantier
+
+Écrans pour une application de rapport journalier (effectif, engins,
+sous-traitants). Les données sont en tête de chaque script : remplacez-les par
+celles de votre API.
+
+| Fichier | Description |
+| --- | --- |
+| `chantier-kpi-cards.html` | Cartes « Effectif total du jour », « Engins mobilisés », « Sous-traitants » : bordure qui se dessine, compteurs, icônes vivantes (ouvrier qui travaille, engin qui roule avec poussière, poignée de main), barres d'objectif et mise à jour en direct (chiffre qui défile + badge « +1 »). |
+| `engins-chantier.html` | Liste des engins dessinés en SVG et animés : pelleteuse qui creuse, bulldozer qui pousse la terre, camion benne qui roule puis vide sa benne, rouleau compacteur qui vibre. Compteur horaire en temps réel, jauge de carburant, états « En marche / En pause / En panne » (animation figée, fumée, alerte). |
+| `equipe-pointage.html` | Équipe du jour : anneau de présence, onglets filtrants à pastille glissante, bouton « Pointer » avec coche animée, détection du retard et réorganisation fluide de la liste (animation FLIP). |
+| `sous-traitants.html` | Cartes des entreprises sous-traitantes : pile d'avatars des intervenants, anneau d'avancement, accordéon des tâches du jour à cocher (l'anneau se met à jour). |
+| `rapport-journalier.html` | Rapport complet : météo animée, chiffres clés, histogramme des heures, avancement des tâches, journal de la journée (ajout d'événements) et validation avec tampon « VALIDÉ » et signature qui se dessine. |
 
 ### Boutons & contrôles
 
@@ -94,7 +114,7 @@ directement via `index.html#mon-effet.html`.
 ## Catégories, recherche et pagination
 
 - Les animations sont regroupées par catégorie dans la barre latérale ; les
-  boutons de filtre (Toutes, Boutons & contrôles, …, Pages complètes) limitent
+  boutons de filtre (Toutes, Rapport de chantier, Boutons & contrôles, …) limitent
   la liste à une catégorie.
 - Le champ **Rechercher** filtre la liste par nom, nom de fichier, catégorie et mots-clés
   (`tags`). Il ignore les majuscules et les accents (« coeur » trouve « cœur »).

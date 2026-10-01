@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sous-traitants</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #fff;
+    --border: #e6e9f2;
+    --blue: #1e40af;
+    --navy: #172554;
+    --muted: #64748b;
+    --green: #16a34a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--navy);
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  header .hs {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #eef3ff;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+  }
+  header .hs span { display: inline-block; animation: shake 2.4s ease-in-out infinite; }
+  header h1 { font-size: 20px; }
+  header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .grid { display: grid; gap: 14px; }
+
+  /* ---------- Carte d'un sous-traitant ---------- */
+  .sub {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--c);
+    border-radius: 12px;
+    background: var(--card);
+    overflow: hidden;
+    animation: card-in .7s cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(var(--i) * .12s);
+    transition: box-shadow .3s;
+  }
+  .sub:hover { box-shadow: 0 12px 28px rgba(23, 37, 84, .08); }
+
+  .top {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    background: color-mix(in srgb, var(--c) 12%, #fff);
+  }
+  .logo span { display: inline-block; animation: tool 2s ease-in-out infinite; animation-delay: calc(var(--i) * .3s); }
+
+  .name strong { display: block; font-size: 15px; }
+  .name small { font-size: 13px; color: var(--muted); }
+  .onsite {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .onsite::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ping 1.6s ease-out infinite;
+  }
+
+  /* Pile d'avatars des intervenants */
+  .people { display: flex; align-items: center; }
+  .people i {
+    width: 30px;
+    height: 30px;
+    margin-left: -8px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: grid;
+    place-items: center;
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--c);
+    animation: pop .5s cubic-bezier(.34, 1.56, .64, 1) both;
+    animation-delay: calc(.5s + var(--i) * .12s + var(--k) * .08s);
+    transition: transform .2s;
+  }
+  .people i:first-child { margin-left: 0; }
+  .people i.more { background: #e2e8f0; color: var(--navy); }
+  .sub:hover .people i { transform: translateX(calc(var(--k) * 3px)); }
+
+  /* Anneau d'avancement */
+  .progress { position: relative; width: 56px; height: 56px; }
+  .progress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .progress circle { fill: none; stroke-width: 6; }
+  .progress .track { stroke: #eef1f7; }
+  .progress .bar {
+    stroke: var(--c);
+    stroke-linecap: round;
+    stroke-dasharray: 138.2;
+    stroke-dashoffset: 138.2;
+    transition: stroke-dashoffset 1.2s cubic-bezier(.2, .8, .2, 1);
+  }
+  .progress b {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Détail dépliable (accordéon fluide via grid-template-rows) ---------- */
+  .detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .45s cubic-bezier(.2, .8, .2, 1);
+  }
+  .sub.open .detail { grid-template-rows: 1fr; }
+  .detail > div { overflow: hidden; }
+  .detail ul { list-style: none; padding: 4px 16px 16px 80px; display: grid; gap: 8px; }
+  .detail li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .3s, transform .3s;
+  }
+  .sub.open .detail li { opacity: 1; transform: none; transition-delay: calc(.15s + var(--k) * .06s); }
+
+  .detail input { position: absolute; opacity: 0; pointer-events: none; }
+  .check {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid #cbd5e1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background .2s, border-color .2s, transform .2s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  .check svg { width: 12px; height: 12px; }
+  .check path { fill: none; stroke: #fff; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset .3s .05s; }
+  .detail input:checked + .check { background: var(--c); border-color: var(--c); transform: scale(1.1); }
+  .detail input:checked + .check path { stroke-dashoffset: 0; }
+  .detail input:checked ~ span { text-decoration: line-through; color: var(--muted); }
+  .detail input:focus-visible + .check { outline: 2px solid var(--c); outline-offset: 2px; }
+  .detail label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+
+  @keyframes card-in { from { opacity: 0; transform: translateY(20px); } }
+  @keyframes pop     { from { opacity: 0; transform: scale(0); } }
+  @keyframes ping    { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .5); } 100% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); } }
+  @keyframes shake   { 0%, 55%, 100% { transform: rotate(0); } 62% { transform: rotate(-10deg) translateY(-2px); } 70% { transform: rotate(8deg) translateY(2px); } 78% { transform: rotate(-6deg); } 86% { transform: rotate(4deg); } }
+  @keyframes tool    { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(10deg); } 75% { transform: rotate(-4deg); } }
+
+  @media (max-width: 600px) {
+    .top { grid-template-columns: auto 1fr auto; }
+    .people { grid-column: 2; grid-row: 2; }
+    .detail ul { padding-left: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="hs" aria-hidden="true"><span>🤝</span></div>
+  <div>
+    <h1>Sous-traitants sur site</h1>
+    <p>Cliquez sur une entreprise pour voir et cocher ses tâches du jour</p>
+  </div>
+</header>
+
+<div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+  // Sous-traitants du jour (à remplacer par vos données)
+  const subs = [
+    { company: 'ÉlecPro Services', trade: 'Électricité',  icon: '⚡', color: '#ca8a04', people: ['AK', 'BS', 'TM'],
+      tasks: [['Passage des gaines R+1', true], ['Pose tableau électrique', true], ['Raccordement éclairage provisoire', false], ['Contrôle continuité', false]] },
+    { company: 'AquaPlomb', trade: 'Plomberie', icon: '🔧', color: '#0891b2', people: ['DO', 'KF'],
+      tasks: [['Réseau eaux usées sous-sol', true], ['Colonnes montantes', false], ['Essai de pression', false]] },
+    { company: 'Étanch’Afrique', trade: 'Étanchéité', icon: '🧱', color: '#7c3aed', people: ['YN', 'SB', 'MC', 'LT', 'RA'],
+      tasks: [['Préparation du support', true], ['Primaire d’accrochage', true], ['Pose membrane terrasse', true], ['Relevés d’étanchéité', false]] },
+  ];
+
+  const grid = document.getElementById('grid');
+  const C = 138.2; // circonférence de l'anneau (2πr, r = 22)
+
+  subs.forEach((s, i) => {
+    const card = document.createElement('article');
+    card.className = 'sub';
+    card.style.setProperty('--c', s.color);
+    card.style.setProperty('--i', i);
+
+    const shown = s.people.slice(0, 3);
+    const more = s.people.length - shown.length;
+    const avatars = shown.map((p, k) => `<i style="--k:${k}">${p}</i>`).join('') +
+      (more > 0 ? `<i class="more" style="--k:3">+${more}</i>` : '');
+
+    card.innerHTML = `
+      <button class="top" type="button" aria-expanded="false">
+        <span class="logo"><span>${s.icon}</span></span>
+        <span class="name">
+          <strong>${s.company}</strong>
+          <small>${s.trade} · ${s.people.length} intervenant${s.people.length > 1 ? 's' : ''}</small>
+          <span class="onsite">Sur site</span>
+        </span>
+        <span class="people" aria-hidden="true">${avatars}</span>
+        <span class="progress">
+          <svg viewBox="0 0 56 56" aria-hidden="true"><circle class="track" cx="28" cy="28" r="22"/><circle class="bar" cx="28" cy="28" r="22"/></svg>
+          <b>0%</b>
+        </span>
+      </button>
+      <div class="detail"><div><ul>
+        ${s.tasks.map(([t, done], k) => `
+          <li style="--k:${k}"><label>
+            <input type="checkbox" ${done ? 'checked' : ''}>
+            <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+            <span>${t}</span>
+          </label></li>`).join('')}
+      </ul></div></div>`;
+    grid.appendChild(card);
+
+    const top = card.querySelector('.top');
+    top.addEventListener('click', () => {
+      const open = card.classList.toggle('open');
+      top.setAttribute('aria-expanded', open);
+    });
+
+    // L'anneau se recalcule (et s'anime) à chaque tâche cochée
+    card.querySelectorAll('input').forEach(input => input.addEventListener('change', () => update(card)));
+    setTimeout(() => update(card), 500 + i * 150);
+  });
+
+  function update(card) {
+    const inputs = [...card.querySelectorAll('input')];
+    const pct = Math.round(inputs.filter(x => x.checked).length / inputs.length * 100);
+    card.querySelector('.bar').style.strokeDashoffset = C * (1 - pct / 100);
+
+    // Le pourcentage défile jusqu'à sa nouvelle valeur
+    const label = card.querySelector('.progress b');
+    const from = parseInt(label.textContent, 10) || 0;
+    const start = performance.now();
+    (function frame(now) {
+      const t = Math.min(1, (now - start) / 1000);
+      label.textContent = Math.round(from + (pct - from) * (1 - Math.pow(1 - t, 3))) + '%';
+      if (t < 1) requestAnimationFrame(frame);
+    })(start);
+  }
+</script>
+</body>
+</html>
