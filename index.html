@@ -53,11 +53,106 @@
     color: var(--muted);
   }
 
+  /* Recherche */
+  .search {
+    position: relative;
+    margin: 0 10px 8px;
+  }
+  .search svg {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    width: 15px;
+    height: 15px;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    padding: 9px 30px 9px 34px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s ease;
+  }
+  .search input::placeholder { color: var(--muted); }
+  .search input:focus { border-color: var(--accent); }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .search kbd {
+    position: absolute;
+    right: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font: 11px ui-monospace, monospace;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search input:focus ~ kbd,
+  .search input:not(:placeholder-shown) ~ kbd { display: none; }
+
+  .count {
+    padding: 0 22px 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
   .list {
+    flex: 1;
     list-style: none;
-    padding: 6px 10px 20px;
+    padding: 4px 10px 12px;
     overflow-y: auto;
   }
+
+  .empty {
+    padding: 14px 12px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .list mark {
+    background: rgba(124, 140, 255, .28);
+    color: inherit;
+    border-radius: 3px;
+  }
+
+  /* Pagination */
+  .pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .pager[hidden] { display: none; }
+  .pager button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .pager button:hover:not(:disabled) { background: var(--panel-2); color: var(--text); }
+  .pager button[aria-current="page"] {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .pager button:disabled { opacity: .35; cursor: default; }
 
   .list button {
     width: 100%;
@@ -166,7 +261,7 @@
   @media (max-width: 900px) {
     body { flex-direction: column; height: auto; }
     .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-    .list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px; }
+    .list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
     .list button { white-space: nowrap; }
     .main { padding: 16px; }
     .columns { grid-template-columns: 1fr; }
@@ -182,7 +277,14 @@
     Animations Gallery
     <small>Micro-interactions UI</small>
   </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="search" type="search" placeholder="Rechercher…" autocomplete="off" aria-label="Rechercher une animation">
+    <kbd>/</kbd>
+  </label>
+  <p class="count" id="count" aria-live="polite"></p>
   <ul class="list" id="list"></ul>
+  <nav class="pager" id="pager" aria-label="Pagination"></nav>
 </aside>
 
 <main class="main">
@@ -203,21 +305,27 @@
 </main>
 
 <script>
-  // Liste des animations : ajoutez une entrée ici pour chaque nouveau fichier
+  // Liste des animations : ajoutez une entrée ici pour chaque nouveau fichier.
+  // `tags` (facultatif) : mots-clés supplémentaires pris en compte par la recherche.
   const animations = [
-    { name: 'Order Confirm',      file: 'order-confirm.html' },
-    { name: 'Like Button',        file: 'like-button.html' },
-    { name: 'Toggle Switch',      file: 'toggle-switch.html' },
-    { name: 'Loading Spinner',    file: 'loading-spinner.html' },
-    { name: 'Toast Notification', file: 'toast-notification.html' },
-    { name: 'Skeleton Loader',    file: 'skeleton-loader.html' },
-    { name: 'Flip Card',          file: 'flip-card.html' },
-    { name: 'Ripple Button',      file: 'ripple-button.html' },
-    { name: 'Progress Bar',       file: 'progress-bar.html' },
-    { name: 'Hamburger Menu',     file: 'hamburger-menu.html' },
+    { name: 'Order Confirm',      file: 'order-confirm.html',      tags: 'commande camion livraison colis bouton coche' },
+    { name: 'Like Button',        file: 'like-button.html',        tags: 'coeur cœur j\'aime favori particules' },
+    { name: 'Toggle Switch',      file: 'toggle-switch.html',      tags: 'interrupteur on off checkbox formulaire' },
+    { name: 'Loading Spinner',    file: 'loading-spinner.html',    tags: 'chargement attente rotation loader' },
+    { name: 'Toast Notification', file: 'toast-notification.html', tags: 'notification alerte message snackbar' },
+    { name: 'Skeleton Loader',    file: 'skeleton-loader.html',    tags: 'squelette chargement shimmer carte placeholder' },
+    { name: 'Flip Card',          file: 'flip-card.html',          tags: 'carte retourner 3d survol hover' },
+    { name: 'Ripple Button',      file: 'ripple-button.html',      tags: 'onde bouton material clic' },
+    { name: 'Progress Bar',       file: 'progress-bar.html',       tags: 'progression barre envoi upload pourcentage' },
+    { name: 'Hamburger Menu',     file: 'hamburger-menu.html',     tags: 'menu navigation croix burger mobile' },
   ];
 
+  const PAGE_SIZE = 6; // nombre d'animations par page dans la barre latérale
+
   const list = document.getElementById('list');
+  const searchInput = document.getElementById('search');
+  const countEl = document.getElementById('count');
+  const pager = document.getElementById('pager');
   const title = document.getElementById('title');
   const openLink = document.getElementById('open');
   const preview = document.getElementById('preview');
@@ -226,26 +334,145 @@
   const copyBtn = document.getElementById('copy');
   let currentSource = '';
   let requestId = 0;
+  let currentFile = '';
+  let filtered = animations;
+  let page = 1;
 
-  // Construction de la barre latérale
-  animations.forEach(anim => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = anim.name;
-    btn.dataset.file = anim.file;
-    btn.addEventListener('click', () => { location.hash = anim.file; });
-    li.appendChild(btn);
-    list.appendChild(li);
+  // ---------- Recherche ----------
+
+  // Minuscules + suppression des accents : « coeur » trouve « cœur », « reseau » trouve « réseau »
+  const normalize = str => str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/g, 'oe');
+
+  function applySearch() {
+    const terms = normalize(searchInput.value.trim()).split(/\s+/).filter(Boolean);
+    filtered = animations.filter(anim => {
+      const haystack = normalize([anim.name, anim.file, anim.tags || ''].join(' '));
+      return terms.every(t => haystack.includes(t));
+    });
+    // Reste sur la page de l'animation affichée si elle fait partie des résultats
+    const index = filtered.findIndex(a => a.file === currentFile);
+    page = index >= 0 ? Math.floor(index / PAGE_SIZE) + 1 : 1;
+    render();
+  }
+
+  // Surligne les termes recherchés dans le nom (construit en DOM, sans innerHTML)
+  function highlight(el, text) {
+    const terms = normalize(searchInput.value.trim()).split(/\s+/).filter(Boolean);
+    const norm = normalize(text);
+    const marks = new Array(text.length).fill(false);
+    // normalize() conserve la longueur pour ces noms (pas de ligature œ) : indices alignés
+    if (norm.length === text.length) {
+      terms.forEach(t => {
+        let i = norm.indexOf(t);
+        while (i !== -1) {
+          for (let k = i; k < i + t.length; k++) marks[k] = true;
+          i = norm.indexOf(t, i + t.length);
+        }
+      });
+    }
+    let i = 0;
+    while (i < text.length) {
+      let j = i;
+      while (j < text.length && marks[j] === marks[i]) j++;
+      const chunk = text.slice(i, j);
+      if (marks[i]) {
+        const m = document.createElement('mark');
+        m.textContent = chunk;
+        el.appendChild(m);
+      } else {
+        el.appendChild(document.createTextNode(chunk));
+      }
+      i = j;
+    }
+  }
+
+  // ---------- Liste + pagination ----------
+
+  function render() {
+    const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    page = Math.min(Math.max(1, page), pages);
+    const start = (page - 1) * PAGE_SIZE;
+    const visible = filtered.slice(start, start + PAGE_SIZE);
+
+    list.replaceChildren();
+    if (!filtered.length) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'Aucune animation trouvée.';
+      list.appendChild(li);
+    }
+    visible.forEach(anim => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.file = anim.file;
+      btn.setAttribute('aria-current', anim.file === currentFile);
+      highlight(btn, anim.name);
+      btn.addEventListener('click', () => { location.hash = anim.file; });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    countEl.textContent = searchInput.value.trim()
+      ? `${filtered.length} résultat${filtered.length > 1 ? 's' : ''} sur ${animations.length}`
+      : `${animations.length} animations`;
+
+    renderPager(pages);
+  }
+
+  function renderPager(pages) {
+    pager.replaceChildren();
+    pager.hidden = pages <= 1;
+    if (pages <= 1) return;
+
+    const make = (label, target, opts = {}) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (opts.aria) b.setAttribute('aria-label', opts.aria);
+      if (opts.current) b.setAttribute('aria-current', 'page');
+      b.disabled = !!opts.disabled;
+      b.addEventListener('click', () => { page = target; render(); });
+      pager.appendChild(b);
+    };
+
+    make('‹', page - 1, { aria: 'Page précédente', disabled: page === 1 });
+    for (let p = 1; p <= pages; p++) {
+      make(String(p), p, { aria: `Page ${p}`, current: p === page });
+    }
+    make('›', page + 1, { aria: 'Page suivante', disabled: page === pages });
+  }
+
+  searchInput.addEventListener('input', applySearch);
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && filtered.length) {
+      // Entrée : ouvre le premier résultat de la page affichée
+      location.hash = filtered[(page - 1) * PAGE_SIZE].file;
+    } else if (e.key === 'Escape') {
+      searchInput.value = '';
+      applySearch();
+      searchInput.blur();
+    }
+  });
+
+  // « / » place le curseur dans la recherche
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+    }
   });
 
   async function select(anim) {
     const path = 'animations/' + anim.file;
     const id = ++requestId;
 
-    list.querySelectorAll('button').forEach(b => {
-      b.setAttribute('aria-current', b.dataset.file === anim.file);
-    });
+    currentFile = anim.file;
+    // Affiche la page qui contient l'animation sélectionnée
+    const index = filtered.findIndex(a => a.file === anim.file);
+    if (index >= 0) page = Math.floor(index / PAGE_SIZE) + 1;
+    render();
     title.textContent = anim.name;
     document.title = anim.name + ' · Animations Gallery';
     openLink.href = path;

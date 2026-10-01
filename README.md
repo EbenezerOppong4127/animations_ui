@@ -47,12 +47,25 @@ animations-gallery/
    `index.html` :
 
    ```js
-   { name: 'Mon effet', file: 'mon-effet.html' },
+   { name: 'Mon effet', file: 'mon-effet.html', tags: 'mots clés' },
    ```
+
+   Le champ `tags` est facultatif : ce sont des mots-clés supplémentaires
+   utilisés par la recherche (par exemple `tags: 'bouton clic onde'`).
 3. Ajoutez une ligne dans le tableau ci-dessus du README.
 
 L'animation apparaît alors dans la barre latérale ; elle est aussi accessible
 directement via `index.html#mon-effet.html`.
+
+## Recherche et pagination
+
+- Le champ **Rechercher** filtre la liste par nom, nom de fichier et mots-clés
+  (`tags`). Il ignore les majuscules et les accents (« coeur » trouve « cœur »).
+- Raccourcis clavier : `/` pour aller dans la recherche, `Entrée` pour ouvrir le
+  premier résultat, `Échap` pour effacer.
+- La liste est paginée (`PAGE_SIZE`, 6 par défaut, en haut du script de
+  `index.html`). La page qui contient l'animation affichée est ouverte
+  automatiquement.
 
 ## Lancer en local
 
