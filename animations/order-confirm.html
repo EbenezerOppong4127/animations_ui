@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Confirm</title>
+<style>
+  :root {
+    --bg: #12141a;
+    --btn: #1f2330;
+    --btn-done: #16a34a;
+    --text: #f1f5f9;
+    --truck: #f59e0b;
+    --cabin: #fbbf24;
+    --box: #c08a4a;
+    --duration: 10s;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .order {
+    position: relative;
+    width: 260px;
+    height: 64px;
+    border: none;
+    border-radius: 14px;
+    background: var(--btn);
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(255, 255, 255, .06);
+    transition: transform .15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .order:active { transform: scale(.97); }
+  .order.animate { cursor: default; animation: btn-bg var(--duration) linear forwards; }
+
+  /* --- Textes --- */
+  .order .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .order .label.done { opacity: 0; }
+  .order.animate .label.default { animation: text-out var(--duration) ease forwards; }
+  .order.animate .label.done    { animation: text-in  var(--duration) ease forwards; }
+
+  /* --- Coche --- */
+  .check {
+    width: 22px;
+    height: 22px;
+  }
+  .check path {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+  }
+  .order.animate .check path { animation: draw-check var(--duration) ease forwards; }
+
+  /* --- Route --- */
+  .road {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 11px;
+    height: 2px;
+    opacity: 0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 10px, transparent 10px 20px);
+    background-size: 20px 2px;
+  }
+  .order.animate .road { animation: road var(--duration) linear forwards; }
+
+  /* --- Camion --- */
+  .truck {
+    position: absolute;
+    left: 0;
+    bottom: 13px;
+    width: 64px;
+    height: 34px;
+    transform: translateX(-80px);
+    z-index: 2;
+  }
+  .order.animate .truck { animation: truck var(--duration) cubic-bezier(.45,.05,.35,1) forwards; }
+
+  .truck .cargo {
+    position: absolute;
+    left: 0;
+    bottom: 6px;
+    width: 40px;
+    height: 26px;
+    border-radius: 3px;
+    background: var(--truck);
+    box-shadow: inset -3px 0 0 rgba(0,0,0,.12);
+  }
+  .truck .cabin {
+    position: absolute;
+    left: 41px;
+    bottom: 6px;
+    width: 21px;
+    height: 18px;
+    border-radius: 3px 8px 3px 3px;
+    background: var(--cabin);
+  }
+  .truck .cabin::before { /* vitre */
+    content: "";
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 9px;
+    height: 7px;
+    border-radius: 2px 5px 2px 2px;
+    background: #bfe3ff;
+  }
+  .truck .wheel {
+    position: absolute;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #111;
+    border: 3px solid #333;
+  }
+  .truck .wheel.w1 { left: 6px; }
+  .truck .wheel.w2 { left: 44px; }
+  .order.animate .truck .cargo,
+  .order.animate .truck .cabin { animation: bump .25s ease-in-out 12; }
+
+  /* --- Colis --- */
+  .box {
+    position: absolute;
+    left: 98px;
+    bottom: 13px;
+    width: 20px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--box);
+    opacity: 0;
+    z-index: 1;
+  }
+  .box::before { /* scotch */
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,.35);
+  }
+  .order.animate .box { animation: box var(--duration) ease forwards; }
+
+  /* ============ Séquence (10s) ============
+     0.0s → 0.6s : le texte s'efface
+     0.8s → 3.0s : le camion entre et s'arrête au centre
+     3.2s → 4.2s : le colis glisse de l'arrière et tombe
+     4.6s → 6.5s : le camion repart et sort à droite
+     7.0s → 7.6s : le colis disparaît, le bouton passe au vert
+     7.8s → 8.6s : "Order Placed" + coche dessinée
+     8.6s → 10s  : état final
+  ========================================== */
+
+  @keyframes text-out {
+    0%   { opacity: 1; transform: translateY(0); }
+    6%   { opacity: 0; transform: translateY(-14px); }
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+  @keyframes text-in {
+    0%, 77% { opacity: 0; transform: translateY(14px); }
+    82%     { opacity: 1; transform: translateY(0); }
+    100%    { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes draw-check {
+    0%, 80% { stroke-dashoffset: 24; }
+    87%     { stroke-dashoffset: 0; }
+    100%    { stroke-dashoffset: 0; }
+  }
+  @keyframes road {
+    0%, 6%  { opacity: 0; background-position: 0 0; }
+    10%     { opacity: 1; }
+    66%     { opacity: 1; }
+    72%     { opacity: 0; }
+    100%    { opacity: 0; background-position: -400px 0; }
+  }
+  @keyframes truck {
+    0%, 8% { transform: translateX(-80px); }
+    30%    { transform: translateX(118px); }
+    46%    { transform: translateX(118px); }
+    65%    { transform: translateX(300px); }
+    100%   { transform: translateX(300px); }
+  }
+  @keyframes bump {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-1px); }
+  }
+  @keyframes box {
+    0%, 31% { opacity: 0; transform: translate(26px, -12px) rotate(0); }
+    33%     { opacity: 1; transform: translate(14px, -12px) rotate(0); }
+    37%     { opacity: 1; transform: translate(-6px, -4px) rotate(-12deg); }
+    40%     { opacity: 1; transform: translate(-10px, 0) rotate(0); }
+    42%     { opacity: 1; transform: translate(-10px, -3px) rotate(0); }
+    44%     { opacity: 1; transform: translate(-10px, 0) rotate(0); }
+    70%     { opacity: 1; transform: translate(-10px, 0) scale(1); }
+    76%     { opacity: 0; transform: translate(-10px, 0) scale(0); }
+    100%    { opacity: 0; transform: translate(-10px, 0) scale(0); }
+  }
+  @keyframes btn-bg {
+    0%, 72% { background: var(--btn); }
+    78%     { background: var(--btn-done); }
+    100%    { background: var(--btn-done); }
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<button class="order" type="button" aria-live="polite">
+  <span class="label default">Complete Order</span>
+  <span class="label done">
+    Order Placed
+    <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
+  </span>
+  <span class="road"></span>
+  <span class="box"></span>
+  <span class="truck" aria-hidden="true">
+    <span class="cargo"></span>
+    <span class="cabin"></span>
+    <span class="wheel w1"></span>
+    <span class="wheel w2"></span>
+  </span>
+</button>
+
+<p class="hint">Cliquez sur le bouton pour lancer la séquence (relançable une fois terminée).</p>
+
+<script>
+  const button = document.querySelector('.order');
+  const DURATION = 10000; // doit correspondre à --duration
+
+  button.addEventListener('click', () => {
+    if (button.classList.contains('animate')) return;
+    button.classList.add('animate');
+    // Retire la classe à la fin pour permettre de relancer l'animation
+    setTimeout(() => button.classList.remove('animate'), DURATION);
+  });
+</script>
+</body>
+</html>

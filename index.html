@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animations Gallery</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0e1015;
+    --panel: #161922;
+    --panel-2: #1c2030;
+    --border: #262b3a;
+    --text: #e5e7eb;
+    --muted: #8b93a7;
+    --accent: #7c8cff;
+    --sidebar-w: 240px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+  }
+
+  /* ---------- Barre latérale ---------- */
+  .sidebar {
+    flex: none;
+    width: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .brand {
+    padding: 22px 20px 16px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .2px;
+  }
+  .brand small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .list {
+    list-style: none;
+    padding: 6px 10px 20px;
+    overflow-y: auto;
+  }
+
+  .list button {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .list button:hover { background: var(--panel-2); color: var(--text); }
+  .list button[aria-current="true"] {
+    background: rgba(124, 140, 255, .14);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---------- Zone principale ---------- */
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .main h1 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .main h1 a {
+    margin-left: 10px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .columns {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .pane {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+
+  .pane-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .preview {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  .code {
+    flex: 1;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    background: #0b0d12;
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #c9d1e3;
+    tab-size: 2;
+  }
+
+  .copy {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .copy:hover { border-color: var(--accent); }
+  .copy.ok { color: #4ade80; border-color: #4ade80; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    body { flex-direction: column; height: auto; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    .list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px; }
+    .list button { white-space: nowrap; }
+    .main { padding: 16px; }
+    .columns { grid-template-columns: 1fr; }
+    .preview { min-height: 420px; }
+    .code { max-height: 500px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    Animations Gallery
+    <small>Micro-interactions UI</small>
+  </div>
+  <ul class="list" id="list"></ul>
+</aside>
+
+<main class="main">
+  <h1><span id="title"></span><a id="open" href="#" target="_blank" rel="noopener">ouvrir ↗</a></h1>
+  <div class="columns">
+    <section class="pane">
+      <div class="pane-head">Aperçu</div>
+      <iframe class="preview" id="preview" title="Aperçu de l'animation"></iframe>
+    </section>
+    <section class="pane">
+      <div class="pane-head">
+        <span id="filename">Code source</span>
+        <button class="copy" id="copy" type="button">Copier</button>
+      </div>
+      <pre class="code"><code id="code"></code></pre>
+    </section>
+  </div>
+</main>
+
+<script>
+  // Liste des animations : ajoutez une entrée ici pour chaque nouveau fichier
+  const animations = [
+    { name: 'Order Confirm',      file: 'order-confirm.html' },
+    { name: 'Like Button',        file: 'like-button.html' },
+    { name: 'Toggle Switch',      file: 'toggle-switch.html' },
+    { name: 'Loading Spinner',    file: 'loading-spinner.html' },
+    { name: 'Toast Notification', file: 'toast-notification.html' },
+    { name: 'Skeleton Loader',    file: 'skeleton-loader.html' },
+    { name: 'Flip Card',          file: 'flip-card.html' },
+    { name: 'Ripple Button',      file: 'ripple-button.html' },
+    { name: 'Progress Bar',       file: 'progress-bar.html' },
+    { name: 'Hamburger Menu',     file: 'hamburger-menu.html' },
+  ];
+
+  const list = document.getElementById('list');
+  const title = document.getElementById('title');
+  const openLink = document.getElementById('open');
+  const preview = document.getElementById('preview');
+  const filename = document.getElementById('filename');
+  const code = document.getElementById('code');
+  const copyBtn = document.getElementById('copy');
+  let currentSource = '';
+  let requestId = 0;
+
+  // Construction de la barre latérale
+  animations.forEach(anim => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = anim.name;
+    btn.dataset.file = anim.file;
+    btn.addEventListener('click', () => { location.hash = anim.file; });
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+
+  async function select(anim) {
+    const path = 'animations/' + anim.file;
+    const id = ++requestId;
+
+    list.querySelectorAll('button').forEach(b => {
+      b.setAttribute('aria-current', b.dataset.file === anim.file);
+    });
+    title.textContent = anim.name;
+    document.title = anim.name + ' · Animations Gallery';
+    openLink.href = path;
+    filename.textContent = anim.file;
+    preview.src = path;
+    code.textContent = 'Chargement…';
+    currentSource = '';
+
+    try {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      const text = await res.text();
+      if (id !== requestId) return; // une autre animation a été sélectionnée entre-temps
+      currentSource = text;
+      code.textContent = text; // textContent : le HTML est affiché brut, jamais interprété
+    } catch (err) {
+      if (id !== requestId) return;
+      code.textContent =
+        'Impossible de charger le code source (' + err.message + ').\n\n' +
+        'fetch() ne fonctionne pas en file:// — lancez un serveur local :\n' +
+        '  python3 -m http.server 8000\n' +
+        'puis ouvrez http://localhost:8000';
+    }
+  }
+
+  function route() {
+    const file = decodeURIComponent(location.hash.slice(1));
+    select(animations.find(a => a.file === file) || animations[0]);
+  }
+
+  // Copie dans le presse-papiers (avec repli pour les contextes non sécurisés)
+  copyBtn.addEventListener('click', async () => {
+    if (!currentSource) return;
+    try {
+      await navigator.clipboard.writeText(currentSource);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = currentSource;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    copyBtn.textContent = 'Copié ✓';
+    copyBtn.classList.add('ok');
+    clearTimeout(copyBtn._t);
+    copyBtn._t = setTimeout(() => {
+      copyBtn.textContent = 'Copier';
+      copyBtn.classList.remove('ok');
+    }, 1500);
+  });
+
+  window.addEventListener('hashchange', route);
+  route();
+</script>
+</body>
+</html>

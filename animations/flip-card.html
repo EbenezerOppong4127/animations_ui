@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flip Card</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 30% 20%, #1e293b, #0b1120);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .card {
+    width: 240px;
+    height: 320px;
+    perspective: 1000px;
+    cursor: pointer;
+  }
+
+  .inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .7s cubic-bezier(.4, .2, .2, 1);
+  }
+
+  /* Retournement au survol (desktop) ou au focus/clic (mobile, clavier) */
+  .card:hover .inner,
+  .card:focus-visible .inner,
+  .card.flipped .inner { transform: rotateY(180deg); }
+  .card:focus-visible { outline: none; }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .45);
+    color: #fff;
+  }
+
+  .front {
+    background: linear-gradient(160deg, #f97316, #db2777 60%, #7c3aed);
+  }
+  .front .emoji { font-size: 64px; margin-bottom: auto; }
+  .front h2 { font-size: 24px; }
+  .front p { opacity: .85; font-size: 14px; margin-top: 4px; }
+
+  .back {
+    transform: rotateY(180deg);
+    background: #f8fafc;
+    color: #0f172a;
+    justify-content: center;
+    gap: 12px;
+  }
+  .back h3 { font-size: 18px; }
+  .back p { font-size: 14px; line-height: 1.5; color: #475569; }
+  .back .cta {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card" tabindex="0" aria-label="Carte retournable">
+  <div class="inner">
+    <div class="face front">
+      <span class="emoji" aria-hidden="true">🌋</span>
+      <h2>Islande</h2>
+      <p>7 jours · dès 890 €</p>
+    </div>
+    <div class="face back">
+      <h3>Au programme</h3>
+      <p>Geysers, glaciers, sources chaudes et aurores boréales sur la route circulaire.</p>
+      <span class="cta">Réserver</span>
+    </div>
+  </div>
+</div>
+
+<p class="hint">Survolez (ou touchez) la carte pour la retourner.</p>
+
+<script>
+  // Sur écran tactile il n'y a pas de survol : on bascule au clic
+  const card = document.querySelector('.card');
+  card.addEventListener('click', () => {
+    if (window.matchMedia('(hover: none)').matches) card.classList.toggle('flipped');
+  });
+</script>
+</body>
+</html>

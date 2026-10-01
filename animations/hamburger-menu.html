@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamburger Menu</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #14161c;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .nav { position: relative; }
+
+  .burger {
+    position: relative;
+    z-index: 2;
+    width: 64px;
+    height: 64px;
+    border: none;
+    border-radius: 16px;
+    background: #facc15;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(250, 204, 21, .25);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .burger:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+  .burger span {
+    position: absolute;
+    left: 18px;
+    width: 28px;
+    height: 3px;
+    border-radius: 3px;
+    background: #14161c;
+    transition:
+      top .2s ease .2s,
+      transform .2s ease,
+      opacity .1s ease .2s;
+  }
+  .burger span:nth-child(1) { top: 22px; }
+  .burger span:nth-child(2) { top: 30.5px; }
+  .burger span:nth-child(3) { top: 39px; }
+
+  /* Ouverture : les barres se rejoignent au centre, puis pivotent */
+  .nav.open .burger span {
+    transition:
+      top .2s ease,
+      transform .2s ease .2s,
+      opacity .1s ease .2s;
+  }
+  .nav.open .burger span:nth-child(1) { top: 30.5px; transform: rotate(45deg); }
+  .nav.open .burger span:nth-child(2) { opacity: 0; }
+  .nav.open .burger span:nth-child(3) { top: 30.5px; transform: rotate(-45deg); }
+
+  /* Menu déroulant */
+  .menu {
+    position: absolute;
+    top: 76px;
+    left: 50%;
+    width: 200px;
+    padding: 8px;
+    list-style: none;
+    border-radius: 14px;
+    background: #23262f;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+    transform: translate(-50%, -10px) scale(.95);
+    transform-origin: top center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+  }
+  .nav.open .menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0) scale(1);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s;
+  }
+
+  .menu a {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: 15px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: background .15s ease, opacity .2s ease, transform .2s ease;
+  }
+  .menu a:hover { background: #2f333e; }
+  .nav.open .menu a { opacity: 1; transform: none; }
+  .nav.open .menu li:nth-child(1) a { transition-delay: .10s; }
+  .nav.open .menu li:nth-child(2) a { transition-delay: .15s; }
+  .nav.open .menu li:nth-child(3) a { transition-delay: .20s; }
+  .nav.open .menu li:nth-child(4) a { transition-delay: .25s; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <button class="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="menu" id="menu">
+    <li><a href="#">Accueil</a></li>
+    <li><a href="#">Projets</a></li>
+    <li><a href="#">Blog</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</nav>
+
+<script>
+  const nav = document.querySelector('.nav');
+  const burger = nav.querySelector('.burger');
+
+  burger.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open);
+    burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+  });
+
+  // Fermeture avec Échap
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && nav.classList.contains('open')) burger.click();
+  });
+</script>
+</body>
+</html>
